@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  # LocalStack for AWS services simulation
+  localstack:
+    image: localstack/localstack:latest
+    container_name: smartqueue-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=dynamodb,s3,apigateway
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "/tmp/localstack:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - smartqueue-network
+
+  # AWS Service - Queue Manager
+  aws-service:
+    build:
+      context: ./service-queue-aws
+      dockerfile: Dockerfile
+    container_name: smartqueue-aws-service
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - AWS_REGION=ap-southeast-1
+      - AWS_DYNAMODB_ENDPOINT=http://localstack:4566
+      - DDB_TABLE_TICKETS=smartqueue-tickets
+      - DDB_TABLE_QUEUES=smartqueue-queues
+      - SERVICE_B_BASEURL=http://aliyun-service:8081
+      - TEST_KEY=LOADTEST-SECRET-KEY
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    depends_on:
+      - localstack
+    networks:
+      - smartqueue-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Aliyun Service - ETA & Notification (Mock mode for local)
+  aliyun-service:
+    build:
+      context: ./service-eta-aliyun
+      dockerfile: Dockerfile
+    container_name: smartqueue-aliyun-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - ALI_REGION=ap-southeast-1
+      - ALIYUN_AK=test
+      - ALIYUN_SK=test
+      - OTS_ENDPOINT=http://localhost:8080  # Mock endpoint
+      - OTS_INSTANCE=smartqueue-ots
+      - MNS_ENDPOINT=http://localhost:8080  # Mock endpoint
+      - MNS_QUEUE_NAME=smartqueue-notifications
+      - NOTIFY_MODE=DIRECT
+      - SERVICE_A_WEBHOOK=http://aws-service:8080/stats/served
+    networks:
+      - smartqueue-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smartqueue-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - aws-service
+      - aliyun-service
+    networks:
+      - smartqueue-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  smartqueue-network:
+    driver: bridge
+
+volumes:
+  localstack-data:
