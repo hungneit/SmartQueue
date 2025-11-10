@@ -114,9 +114,7 @@ public class QueueController {
             
             for (int i = 0; i < request.getBatch(); i++) {
                 JoinQueueRequest joinRequest = JoinQueueRequest.builder()
-                        .email("test" + i + "@example.com")
-                        .phone("+1234567890")
-                        .userName("TestUser" + i)
+                        .userId("test-user-" + i)
                         .build();
                 
                 JoinQueueResponse response = queueService.joinQueue(request.getQueueId(), joinRequest);

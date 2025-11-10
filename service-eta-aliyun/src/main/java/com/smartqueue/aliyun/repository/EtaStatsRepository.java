@@ -5,6 +5,7 @@ import com.alicloud.openservices.tablestore.model.*;
 import com.smartqueue.aliyun.model.EtaStats;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -13,14 +14,26 @@ import java.util.Optional;
 
 @Slf4j
 @Repository
-@RequiredArgsConstructor
 public class EtaStatsRepository {
     
     private final SyncClient tableStoreClient;
     private final String etaStatsTableName;
     
+    public EtaStatsRepository(@Autowired(required = false) SyncClient tableStoreClient, 
+                             String etaStatsTableName) {
+        this.tableStoreClient = tableStoreClient;
+        this.etaStatsTableName = etaStatsTableName;
+        log.info("EtaStatsRepository initialized with client: {}", tableStoreClient != null ? "REAL" : "NULL");
+    }
+    
     public EtaStats save(EtaStats etaStats) {
         log.debug("Saving ETA stats for queue: {}", etaStats.getQueueId());
+        
+        if (tableStoreClient == null) {
+            log.warn("TableStore client is null, skipping save operation");
+            etaStats.setUpdatedAt(Instant.now());
+            return etaStats;
+        }
         
         try {
             etaStats.setUpdatedAt(Instant.now());
@@ -53,6 +66,11 @@ public class EtaStatsRepository {
     
     public Optional<EtaStats> findByQueueIdAndTimeWindow(String queueId, String timeWindow) {
         log.debug("Finding ETA stats for queue: {} and time window: {}", queueId, timeWindow);
+        
+        if (tableStoreClient == null) {
+            log.warn("TableStore client is null, returning empty result");
+            return Optional.empty();
+        }
         
         try {
             PrimaryKeyBuilder primaryKeyBuilder = PrimaryKeyBuilder.createPrimaryKeyBuilder();
@@ -117,6 +135,11 @@ public class EtaStatsRepository {
     
     public void deleteByQueueId(String queueId) {
         log.debug("Deleting ETA stats for queue: {}", queueId);
+        
+        if (tableStoreClient == null) {
+            log.warn("TableStore client is null, skipping delete operation");
+            return;
+        }
         
         try {
             // Note: This is a simplified deletion for the current time window

@@ -2,72 +2,72 @@ package com.smartqueue.aliyun.config;
 
 import com.alicloud.openservices.tablestore.SyncClient;
 import com.alicloud.openservices.tablestore.ClientConfiguration;
-import com.aliyun.mns.client.CloudAccount;
-import com.aliyun.mns.client.MNSClient;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 @Configuration
+@Slf4j
 public class AliyunConfig {
     
-    @Value("${aliyun.region}")
-    private String region;
-    
-    @Value("${aliyun.access-key-id}")
+    @Value("${aliyun.access-key:demo-key}")
     private String accessKeyId;
     
-    @Value("${aliyun.access-key-secret}")
+    @Value("${aliyun.access-secret:demo-secret}")
     private String accessKeySecret;
     
-    @Value("${aliyun.ots.endpoint}")
-    private String otsEndpoint;
+    @Value("${aliyun.tablestore.endpoint:https://demo.ap-southeast-1.ots.aliyuncs.com}")
+    private String tablestoreEndpoint;
     
-    @Value("${aliyun.ots.instance}")
-    private String otsInstanceName;
+    @Value("${aliyun.tablestore.instance:demo-instance}")
+    private String tablestoreInstance;
     
-    @Value("${aliyun.mns.endpoint}")
-    private String mnsEndpoint;
+    @Value("${aliyun.region:ap-southeast-1}")
+    private String region;
     
-    @Value("${aliyun.mns.queue-name}")
-    private String notificationQueueName;
+    @Value("${spring.profiles.active:dev}")
+    private String activeProfile;
     
-    @Bean
+    // 🔥 Real TableStore Client (for production)
+    @Bean(name = "syncClient")
+    @ConditionalOnProperty(name = "aliyun.tablestore.enabled", havingValue = "true", matchIfMissing = false)
     public SyncClient tableStoreClient() {
-        // For development, return a mock client if endpoint is not configured
-        if (otsEndpoint == null || otsEndpoint.isEmpty() || otsEndpoint.startsWith("http://localhost")) {
-            // Return a mock implementation for development
-            return null; // This should be replaced with a proper mock in development
+        if (accessKeyId.equals("demo-key") || accessKeySecret.equals("demo-secret") || 
+            tablestoreEndpoint.contains("demo")) {
+            log.warn("TableStore configuration using demo values, skipping real client creation");
+            return null;
         }
         
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
-        clientConfiguration.setConnectionTimeoutInMillisecond(5000);
-        clientConfiguration.setSocketTimeoutInMillisecond(5000);
-        // Remove retry strategy as DefaultRetryStrategy class doesn't exist in current version
-        
-        return new SyncClient(otsEndpoint, accessKeyId, accessKeySecret, otsInstanceName, clientConfiguration);
+        try {
+            log.info("Initializing REAL TableStore client for instance: {}", tablestoreInstance);
+            ClientConfiguration clientConfiguration = new ClientConfiguration();
+            clientConfiguration.setConnectionTimeoutInMillisecond(5000);
+            clientConfiguration.setSocketTimeoutInMillisecond(5000);
+            
+            return new SyncClient(tablestoreEndpoint, accessKeyId, accessKeySecret, tablestoreInstance, clientConfiguration);
+        } catch (Exception e) {
+            log.error("Failed to create TableStore client", e);
+            return null;
+        }
     }
     
+    // 🧪 No TableStore Client in development mode
+    // The repository will handle null client gracefully
+    
+    // 📧 DirectMail Configuration (handled directly in NotificationService)
     @Bean
-    public MNSClient mnsClient() {
-        // For development, return a mock client if endpoint is not configured
-        if (mnsEndpoint == null || mnsEndpoint.isEmpty() || mnsEndpoint.startsWith("http://localhost")) {
-            // Return a mock implementation for development
-            return null; // This should be replaced with a proper mock in development
-        }
-        
-        CloudAccount account = new CloudAccount(accessKeyId, accessKeySecret, mnsEndpoint);
-        return account.getMNSClient();
+    public boolean directMailEnabled() {
+        boolean enabled = !accessKeyId.equals("demo-key") && !accessKeySecret.equals("demo-secret");
+        log.info("DirectMail enabled: {} (using demo credentials: {})", enabled, !enabled);
+        return enabled;
     }
     
+    // Configuration beans
     @Bean
     public String etaStatsTableName() {
         return "smartqueue_eta_stats";
-    }
-    
-    @Bean
-    public String notificationQueueName() {
-        return notificationQueueName;
     }
     
     @Bean

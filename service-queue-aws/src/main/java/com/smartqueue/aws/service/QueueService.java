@@ -7,8 +7,10 @@ import com.smartqueue.aws.dto.response.ProcessNextResponse;
 import com.smartqueue.aws.dto.response.QueueStatusResponse;
 import com.smartqueue.aws.model.QueueInfo;
 import com.smartqueue.aws.model.Ticket;
+import com.smartqueue.aws.model.User;
 import com.smartqueue.aws.repository.QueueRepository;
 import com.smartqueue.aws.repository.TicketRepository;
+import com.smartqueue.aws.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,21 +30,35 @@ public class QueueService {
     
     private final TicketRepository ticketRepository;
     private final QueueRepository queueRepository;
+    private final UserRepository userRepository;
     private final WebClient etaServiceWebClient;
     private final Duration etaServiceTimeout;
     
     public JoinQueueResponse joinQueue(String queueId, JoinQueueRequest request) {
-        log.info("Processing join queue request for queueId: {}", queueId);
+        log.info("Processing join queue request for queueId: {} by user: {}", queueId, request.getUserId());
         
         try {
-            // Create ticket
+            // Get user information
+            Optional<User> userOpt = userRepository.findById(request.getUserId());
+            if (userOpt.isEmpty()) {
+                throw new RuntimeException("User not found: " + request.getUserId());
+            }
+            
+            User user = userOpt.get();
+            
+            // Create ticket with full user information
             Ticket ticket = Ticket.builder()
                     .ticketId(Ticket.generateTicketId())
                     .queueId(queueId)
                     .status(Ticket.TicketStatus.WAITING)
-                    .userEmail(request.getEmail())
-                    .userPhone(request.getPhone())
+                    .userId(user.getUserId())
+                    .userEmail(user.getEmail())
+                    .userPhone(user.getPhone())
+                    .userName(user.getName())
+                    .position(getNextPosition(queueId))
                     .joinedAt(Instant.now())
+                    .emailNotificationEnabled(user.isEmailNotificationEnabled())
+                    .smsNotificationEnabled(user.isSmsNotificationEnabled())
                     .build();
             
             // Save ticket
@@ -188,6 +204,16 @@ public class QueueService {
                     );
         } catch (Exception e) {
             log.warn("Error notifying service B", e);
+        }
+    }
+
+    private int getNextPosition(String queueId) {
+        try {
+            List<Ticket> waitingTickets = ticketRepository.findByQueueIdAndStatus(queueId, Ticket.TicketStatus.WAITING);
+            return waitingTickets.size() + 1;
+        } catch (Exception e) {
+            log.error("Error calculating next position for queue: {}", queueId, e);
+            return 1; // Fallback to position 1
         }
     }
 }
