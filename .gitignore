@@ -48,6 +48,7 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.envrc
 
 # Cache
 .npm
@@ -67,3 +68,8 @@ application-prod.yml
 
 # Aliyun credentials
 .alibabacloud/
+
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.*
