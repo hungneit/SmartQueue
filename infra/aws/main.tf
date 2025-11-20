@@ -28,7 +28,7 @@ variable "environment" {
 variable "project_name" {
   description = "Project name"
   type        = string
-  default     = "smartqueue"
+  default     = "smartq"
 }
 
 # DynamoDB Tables
@@ -192,7 +192,7 @@ output "s3_bucket_name" {
 output "cloudfront_domain" {
   value = aws_cloudfront_distribution.frontend.domain_name
 }
-
 output "api_gateway_url" {
   value = aws_api_gateway_rest_api.queue_api.execution_arn
 }
+
