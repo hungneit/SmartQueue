@@ -95,24 +95,25 @@ resource "random_string" "bucket_suffix" {
 }
 
 # CDN Domain for Frontend
-resource "alicloud_cdn_domain_new" "frontend" {
-  domain_name = "${var.project_name}-${var.environment}.example.com"
-  cdn_type    = "web"
-  scope       = "overseas"
-
-  sources {
-    content  = alicloud_oss_bucket.frontend.extranet_endpoint
-    type     = "oss"
-    priority = 20
-    port     = 80
-    weight   = 15
-  }
-
-  tags = {
-    Environment = var.environment
-    Project     = var.project_name
-  }
-}
+# Commented out - requires real domain
+# resource "alicloud_cdn_domain_new" "frontend" {
+#   domain_name = "${var.project_name}-${var.environment}.example.com"
+#   cdn_type    = "web"
+#   scope       = "overseas"
+# 
+#   sources {
+#     content  = alicloud_oss_bucket.frontend.extranet_endpoint
+#     type     = "oss"
+#     priority = 20
+#     port     = 80
+#     weight   = 15
+#   }
+# 
+#   tags = {
+#     Environment = var.environment
+#     Project     = var.project_name
+#   }
+# }
 
 # Function Compute Service
 resource "alicloud_fc_service" "eta_service" {
@@ -162,9 +163,9 @@ output "oss_bucket_name" {
   value = alicloud_oss_bucket.frontend.bucket
 }
 
-output "cdn_domain" {
-  value = alicloud_cdn_domain_new.frontend.domain_name
-}
+# output "cdn_domain" {
+#   value = alicloud_cdn_domain_new.frontend.domain_name
+# }
 
 output "fc_service_name" {
   value = alicloud_fc_service.eta_service.name
