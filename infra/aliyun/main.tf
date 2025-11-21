@@ -16,7 +16,7 @@ provider "alicloud" {
 variable "aliyun_region" {
   description = "Aliyun region"
   type        = string
-  default     = "ap-southeast-1"
+  default     = "ap-southeast-1"  # Try "cn-hangzhou" if ap-southeast-1 fails
 }
 
 variable "environment" {
