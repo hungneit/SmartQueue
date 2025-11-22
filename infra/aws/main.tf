@@ -80,16 +80,31 @@ resource "aws_subnet" "main" {
   }
 }
 
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
 resource "aws_instance" "backend" {
-  ami           = "ami-0c55b159cbfafe1f0" # Amazon Linux 2 AMI (update as needed)
-  instance_type = "t2.micro"
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = "t3.micro" # t3.micro is often the alternative Free Tier option
   subnet_id     = aws_subnet.main.id
-    vpc_security_group_ids = [aws_security_group.backend_sg.id]
-    tags = {
-      Name        = "${var.project_name}-backend-ec2-${var.environment}"
-      Environment = var.environment
-      Project     = var.project_name
-    }
+  vpc_security_group_ids = [aws_security_group.backend_sg.id]
+  tags = {
+    Name        = "${var.project_name}-backend-ec2-${var.environment}"
+    Environment = var.environment
+    Project     = var.project_name
+  }
 }
 
 # DynamoDB Tables
