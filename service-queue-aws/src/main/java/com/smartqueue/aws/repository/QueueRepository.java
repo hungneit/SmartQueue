@@ -14,11 +14,15 @@ import java.util.Optional;
 
 @Slf4j
 @Repository
-@RequiredArgsConstructor
 public class QueueRepository {
     
     private final DynamoDbEnhancedClient dynamoDbClient;
     private final String queuesTableName;
+    
+    public QueueRepository(DynamoDbEnhancedClient dynamoDbClient, String queuesTableName) {
+        this.dynamoDbClient = dynamoDbClient;
+        this.queuesTableName = queuesTableName;
+    }
     
     private DynamoDbTable<QueueInfo> getQueuesTable() {
         return dynamoDbClient.table(queuesTableName, TableSchema.fromBean(QueueInfo.class));
@@ -128,6 +132,17 @@ public class QueueRepository {
         } catch (Exception e) {
             log.error("Error deleting queue: {}", queueId, e);
             throw new RuntimeException("Failed to delete queue", e);
+        }
+    }
+
+    public java.util.List<QueueInfo> findAll() {
+        log.debug("Finding all queues");
+        try {
+            return getQueuesTable().scan().items().stream()
+                    .collect(java.util.stream.Collectors.toList());
+        } catch (Exception e) {
+            log.error("Error finding all queues", e);
+            throw new RuntimeException("Failed to find all queues", e);
         }
     }
 }

@@ -22,8 +22,9 @@ public class SecurityConfig {
         return http
                 .csrf().disable()
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/api/v1/users/register", "/api/v1/users/login").permitAll()
-                        .pathMatchers("/api/v1/queues/**").permitAll() // For demo purposes
+                        .pathMatchers("/users/register", "/users/login").permitAll()
+                        .pathMatchers("/users/**").permitAll() // Allow all user operations for dev
+                        .pathMatchers("/queues/**").permitAll() // Queue operations
                         .pathMatchers("/actuator/**").permitAll() // Health checks and metrics
                         .anyExchange().authenticated()
                 )

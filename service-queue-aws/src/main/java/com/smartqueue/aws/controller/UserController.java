@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping("/users")
 @RequiredArgsConstructor
 @Validated
 @Slf4j

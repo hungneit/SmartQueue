@@ -4,13 +4,13 @@ import { CreateUserRequest, LoginRequest, User } from '../types';
 export const userService = {
   // Register new user
   async register(userData: CreateUserRequest): Promise<User> {
-    const response = await api.post('/api/v1/users/register', userData);
+    const response = await api.post('/users/register', userData);
     return response.data;
   },
 
   // Login user
   async login(credentials: LoginRequest): Promise<string> {
-    const response = await api.post('/api/v1/users/login', credentials);
+    const response = await api.post('/users/login', credentials);
     const token = response.data;
 
     // Store token for future requests
@@ -21,7 +21,7 @@ export const userService = {
 
   // Get user profile
   async getProfile(userId: string): Promise<User> {
-    const response = await api.get(`/api/v1/users/${userId}`);
+    const response = await api.get(`/users/${userId}`);
     return response.data;
   },
 
@@ -32,7 +32,7 @@ export const userService = {
     smsEnabled: boolean
   ): Promise<User> {
     const response = await api.put(
-      `/api/v1/users/${userId}/notifications`,
+      `/users/${userId}/notifications`,
       null,
       {
         params: { emailEnabled, smsEnabled }

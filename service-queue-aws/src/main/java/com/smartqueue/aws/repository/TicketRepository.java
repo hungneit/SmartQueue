@@ -21,11 +21,15 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Repository
-@RequiredArgsConstructor
 public class TicketRepository {
     
     private final DynamoDbEnhancedClient dynamoDbClient;
     private final String ticketsTableName;
+    
+    public TicketRepository(DynamoDbEnhancedClient dynamoDbClient, String ticketsTableName) {
+        this.dynamoDbClient = dynamoDbClient;
+        this.ticketsTableName = ticketsTableName;
+    }
     
     private DynamoDbTable<Ticket> getTicketsTable() {
         return dynamoDbClient.table(ticketsTableName, TableSchema.fromBean(Ticket.class));

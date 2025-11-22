@@ -6,6 +6,12 @@
 - **Java Version**: Java 18
 - **Deployment Method**: JAR files với nohup (không dùng Docker)
 
+### ⚙️ Repository Mode
+- **Development (local)**: `USE_IN_MEMORY=true` → Dùng InMemoryRepository (không cần DB)
+- **Production (cloud)**: `USE_IN_MEMORY=false` → Dùng DynamoDB (AWS) và TableStore (Aliyun)
+
+**Cơ chế:** Spring Boot `@ConditionalOnProperty(name = "app.use-in-memory", havingValue = "true")` chỉ tạo InMemory beans khi flag = true. Production không set flag này → tự động dùng DB repos.
+
 ---
 
 ## 🔧 BƯỚC 1: BUILD JAR FILES
@@ -78,6 +84,9 @@ cat > /opt/smartqueue-aws/.env << 'EOF'
 # Spring Configuration
 SPRING_PROFILES_ACTIVE=prod
 SERVER_PORT=8080
+
+# QUAN TRỌNG: Tắt InMemory mode để dùng DynamoDB thật
+USE_IN_MEMORY=false
 
 # AWS Configuration (sẽ dùng IAM Instance Profile)
 AWS_REGION=ap-southeast-1

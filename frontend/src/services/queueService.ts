@@ -4,26 +4,35 @@ import { JoinQueueRequest, Ticket, QueueInfo, EtaResponse } from '../types';
 export const queueService = {
   // Get all available queues
   async getQueues(): Promise<QueueInfo[]> {
-    const response = await api.get('/api/v1/queues');
-    return response.data;
+    const response = await api.get('/queues');
+    // Backend returns array of objects with queueId, queueName, etc
+    return response.data.map((q: any) => ({
+      queueId: q.queueId,
+      name: q.queueName || q.name,
+      description: q.description || 'No description',
+      isActive: q.isActive ?? true,
+      currentWaitingCount: q.openSlots || 0,
+      averageServiceTimeMinutes: 5,
+      maxCapacity: q.maxCapacity || 100
+    }));
   },
 
   // Get specific queue info
   async getQueue(queueId: string): Promise<QueueInfo> {
-    const response = await api.get(`/api/v1/queues/${queueId}`);
+    const response = await api.get(`/queues/${queueId}`);
     return response.data;
   },
 
   // Join a queue
   async joinQueue(queueId: string, userId: string): Promise<Ticket> {
     const joinRequest: JoinQueueRequest = { userId };
-    const response = await api.post(`/api/v1/queues/${queueId}/join`, joinRequest);
+    const response = await api.post(`/queues/${queueId}/join`, joinRequest);
     return response.data;
   },
 
   // Get queue status for a ticket
   async getQueueStatus(queueId: string, ticketId: string): Promise<Ticket> {
-    const response = await api.get(`/api/v1/queues/${queueId}/status/${ticketId}`);
+    const response = await api.get(`/queues/${queueId}/status`, { params: { ticketId } });
     return response.data;
   },
 
@@ -37,13 +46,13 @@ export const queueService = {
 
   // Process next in queue (admin function)
   async processNext(queueId: string, count: number = 1): Promise<any> {
-    const response = await api.post(`/api/v1/queues/${queueId}/next`, { count });
+    const response = await api.post(`/queues/${queueId}/next`, { count });
     return response.data;
   },
 
   // Create a new queue (admin function)
   async createQueue(queueData: Partial<QueueInfo>): Promise<QueueInfo> {
-    const response = await api.post('/api/v1/queues', queueData);
+    const response = await api.post('/queues', queueData);
     return response.data;
   }
 };
