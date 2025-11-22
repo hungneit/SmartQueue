@@ -7,6 +7,14 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
+    }
   }
 }
 
@@ -40,6 +48,31 @@ resource "aws_vpc" "main" {
   tags = {
     Name = "smartqueue-vpc"
   }
+}
+
+resource "aws_internet_gateway" "gw" {
+  vpc_id = aws_vpc.main.id
+  tags = {
+    Name = "smartqueue-igw"
+  }
+}
+
+resource "aws_route_table" "rt" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.gw.id
+  }
+
+  tags = {
+    Name = "smartqueue-rt"
+  }
+}
+
+resource "aws_route_table_association" "a" {
+  subnet_id      = aws_subnet.main.id
+  route_table_id = aws_route_table.rt.id
 }
   # Security Group for EC2
   resource "aws_security_group" "backend_sg" {
@@ -95,9 +128,27 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
+# SSH Key Generation
+resource "tls_private_key" "pk" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "kp" {
+  key_name   = "${var.project_name}-key-${var.environment}"
+  public_key = tls_private_key.pk.public_key_openssh
+}
+
+resource "local_file" "ssh_key" {
+  filename        = "${path.module}/generated_key.pem"
+  content         = tls_private_key.pk.private_key_pem
+  file_permission = "0400"
+}
+
 resource "aws_instance" "backend" {
   ami           = data.aws_ami.amazon_linux.id
   instance_type = "t3.micro" # t3.micro is often the alternative Free Tier option
+  key_name      = aws_key_pair.kp.key_name
   subnet_id     = aws_subnet.main.id
   vpc_security_group_ids = [aws_security_group.backend_sg.id]
   tags = {
@@ -159,6 +210,16 @@ output "dynamodb_tickets_table_name" {
 
 output "dynamodb_queues_table_name" {
   value = aws_dynamodb_table.queues.name
+}
+
+output "ssh_private_key_path" {
+  description = "Path to the generated private key"
+  value       = local_file.ssh_key.filename
+}
+
+output "ssh_connection_command" {
+  description = "Command to connect to the instance"
+  value       = "ssh -i ${local_file.ssh_key.filename} ec2-user@${aws_instance.backend.public_ip}"
 }
 
 
