@@ -1,3 +1,5 @@
+
+
 terraform {
   required_version = ">= 1.0"
   required_providers {
@@ -29,6 +31,65 @@ variable "project_name" {
   description = "Project name"
   type        = string
   default     = "smartq"
+}
+
+
+# Subnet for EC2
+resource "aws_vpc" "main" {
+  cidr_block = "10.0.0.0/16"
+  tags = {
+    Name = "smartqueue-vpc"
+  }
+}
+  # Security Group for EC2
+  resource "aws_security_group" "backend_sg" {
+    name        = "smartqueue-backend-sg"
+    description = "Allow SSH and HTTP"
+    vpc_id      = aws_vpc.main.id
+
+    ingress {
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+    ingress {
+      from_port   = 80
+      to_port     = 80
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+    egress {
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+    tags = {
+      Name = "smartqueue-backend-sg"
+    }
+  }
+
+resource "aws_subnet" "main" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
+  map_public_ip_on_launch = true
+  availability_zone       = "${var.aws_region}a"
+  tags = {
+    Name = "smartqueue-subnet"
+  }
+}
+
+resource "aws_instance" "backend" {
+  ami           = "ami-0c55b159cbfafe1f0" # Amazon Linux 2 AMI (update as needed)
+  instance_type = "t2.micro"
+  subnet_id     = aws_subnet.main.id
+    vpc_security_group_ids = [aws_security_group.backend_sg.id]
+    tags = {
+      Name        = "${var.project_name}-backend-ec2-${var.environment}"
+      Environment = var.environment
+      Project     = var.project_name
+    }
 }
 
 # DynamoDB Tables
@@ -75,106 +136,6 @@ resource "aws_dynamodb_table" "queues" {
   }
 }
 
-# S3 Bucket for Frontend
-resource "aws_s3_bucket" "frontend" {
-  bucket = "${var.project_name}-frontend-${var.environment}-${random_string.bucket_suffix.result}"
-
-  tags = {
-    Environment = var.environment
-    Project     = var.project_name
-  }
-}
-
-resource "random_string" "bucket_suffix" {
-  length  = 8
-  special = false
-  upper   = false
-}
-
-resource "aws_s3_bucket_public_access_block" "frontend" {
-  bucket = aws_s3_bucket.frontend.id
-
-  block_public_acls       = false
-  block_public_policy     = false
-  ignore_public_acls      = false
-  restrict_public_buckets = false
-}
-
-resource "aws_s3_bucket_website_configuration" "frontend" {
-  bucket = aws_s3_bucket.frontend.id
-
-  index_document {
-    suffix = "index.html"
-  }
-
-  error_document {
-    key = "index.html"
-  }
-}
-
-# CloudFront Distribution
-resource "aws_cloudfront_distribution" "frontend" {
-  origin {
-    domain_name = aws_s3_bucket_website_configuration.frontend.website_endpoint
-    origin_id   = "S3-${aws_s3_bucket.frontend.id}"
-
-    custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      origin_protocol_policy = "http-only"
-      origin_ssl_protocols   = ["TLSv1.2"]
-    }
-  }
-
-  enabled             = true
-  is_ipv6_enabled     = true
-  default_root_object = "index.html"
-
-  default_cache_behavior {
-    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods         = ["GET", "HEAD"]
-    target_origin_id       = "S3-${aws_s3_bucket.frontend.id}"
-    compress               = true
-    viewer_protocol_policy = "redirect-to-https"
-
-    forwarded_values {
-      query_string = false
-      cookies {
-        forward = "none"
-      }
-    }
-  }
-
-  restrictions {
-    geo_restriction {
-      restriction_type = "none"
-    }
-  }
-
-  viewer_certificate {
-    cloudfront_default_certificate = true
-  }
-
-  tags = {
-    Environment = var.environment
-    Project     = var.project_name
-  }
-}
-
-# API Gateway for Lambda
-resource "aws_api_gateway_rest_api" "queue_api" {
-  name        = "${var.project_name}-queue-api-${var.environment}"
-  description = "SmartQueue API Gateway"
-
-  endpoint_configuration {
-    types = ["REGIONAL"]
-  }
-
-  tags = {
-    Environment = var.environment
-    Project     = var.project_name
-  }
-}
 
 # Outputs
 output "dynamodb_tickets_table_name" {
@@ -185,14 +146,4 @@ output "dynamodb_queues_table_name" {
   value = aws_dynamodb_table.queues.name
 }
 
-output "s3_bucket_name" {
-  value = aws_s3_bucket.frontend.bucket
-}
-
-output "cloudfront_domain" {
-  value = aws_cloudfront_distribution.frontend.domain_name
-}
-output "api_gateway_url" {
-  value = aws_api_gateway_rest_api.queue_api.execution_arn
-}
 
