@@ -12,12 +12,15 @@ import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import java.util.Optional;
 
 @Repository
-@RequiredArgsConstructor
 @Slf4j
 public class UserRepository {
     
     private final DynamoDbEnhancedClient dynamoDbEnhancedClient;
     private static final String TABLE_NAME = "smartqueue-users";
+
+    public UserRepository(DynamoDbEnhancedClient dynamoDbEnhancedClient) {
+        this.dynamoDbEnhancedClient = dynamoDbEnhancedClient;
+    }
 
     private DynamoDbTable<User> getUserTable() {
         return dynamoDbEnhancedClient.table(TABLE_NAME, TableSchema.fromBean(User.class));

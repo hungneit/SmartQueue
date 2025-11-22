@@ -19,6 +19,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -160,17 +161,18 @@ public class QueueService {
     private int calculatePosition(String queueId, String ticketId) {
         List<Ticket> waitingTickets = ticketRepository.findWaitingTicketsByQueue(queueId);
         
-        // Sort by joinedAt timestamp
-        waitingTickets.sort((t1, t2) -> t1.getJoinedAt().compareTo(t2.getJoinedAt()));
+        // Sort by joinedAt timestamp (create mutable copy first)
+        List<Ticket> sortedTickets = new ArrayList<>(waitingTickets);
+        sortedTickets.sort((t1, t2) -> t1.getJoinedAt().compareTo(t2.getJoinedAt()));
         
         // Find position of current ticket
-        for (int i = 0; i < waitingTickets.size(); i++) {
-            if (waitingTickets.get(i).getTicketId().equals(ticketId)) {
+        for (int i = 0; i < sortedTickets.size(); i++) {
+            if (sortedTickets.get(i).getTicketId().equals(ticketId)) {
                 return i + 1; // 1-based position
             }
         }
         
-        return waitingTickets.size() + 1; // If not found, put at end
+        return sortedTickets.size() + 1; // If not found, put at end
     }
     
     private Integer getEstimatedWaitTime(String queueId, String ticketId, int position) {
@@ -214,6 +216,16 @@ public class QueueService {
         } catch (Exception e) {
             log.error("Error calculating next position for queue: {}", queueId, e);
             return 1; // Fallback to position 1
+        }
+    }
+
+    public List<QueueInfo> getAllQueues() {
+        log.info("Getting all queues");
+        try {
+            return queueRepository.findAll();
+        } catch (Exception e) {
+            log.error("Error getting all queues", e);
+            throw new RuntimeException("Failed to fetch queues: " + e.getMessage());
         }
     }
 }

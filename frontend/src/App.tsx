@@ -3,9 +3,10 @@ import { ConfigProvider, message } from 'antd';
 import RegisterPage from './components/RegisterPage';
 import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
+import AdminPanel from './components/AdminPanel';
 import './App.css';
 
-type AppState = 'login' | 'register' | 'dashboard';
+type AppState = 'login' | 'register' | 'dashboard' | 'admin';
 
 function App() {
   const [currentView, setCurrentView] = useState<AppState>('login');
@@ -53,11 +54,14 @@ function App() {
             onSwitchToLogin={() => setCurrentView('login')}
           />
         );
+      case 'admin':
+        return <AdminPanel onBack={() => setCurrentView('dashboard')} />;
       case 'dashboard':
         return currentUser ? (
           <Dashboard
             user={currentUser}
             onLogout={handleLogout}
+            onSwitchToAdmin={() => setCurrentView('admin')}
           />
         ) : null;
       case 'login':

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Layout, Card, Button, List, Badge, Statistic, 
-  Row, Col, message, Typography, Space, Tag, Modal, Progress 
+  Row, Col, message, Typography, Space, Tag 
 } from 'antd';
 import { 
   ClockCircleOutlined, TeamOutlined, ThunderboltOutlined, 
@@ -9,7 +9,8 @@ import {
 } from '@ant-design/icons';
 import { queueService } from '../services/queueService';
 import { userService } from '../services/userService';
-import { QueueInfo, Ticket, EtaResponse } from '../types/index';
+import { QueueInfo, Ticket } from '../types/index';
+import TicketDetailModal from './TicketDetailModal';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -17,13 +18,16 @@ const { Title, Text } = Typography;
 interface DashboardProps {
   user: any;
   onLogout: () => void;
+  onSwitchToAdmin?: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onSwitchToAdmin }) => {
   const [queues, setQueues] = useState<QueueInfo[]>([]);
   const [myTickets, setMyTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(false);
   const [joining, setJoining] = useState<string | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [showTicketModal, setShowTicketModal] = useState(false);
 
   const currentUserId = user?.userId || userService.getCurrentUserId();
   const currentUserEmail = localStorage.getItem('userEmail');
@@ -63,13 +67,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     try {
       const ticket = await queueService.joinQueue(queueId, currentUserId);
       
-      // Get ETA
-      const etaResponse = await queueService.getETA(queueId, ticket.ticketId, ticket.position);
-      
       message.success(`Successfully joined queue! Position: ${ticket.position}`);
       
-      // Show ticket details
-      showTicketModal(ticket, etaResponse);
+      // Show ticket details in modal
+      setSelectedTicket(ticket);
+      setShowTicketModal(true);
       
       setMyTickets(prev => [...prev, ticket]);
       
@@ -78,53 +80,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     } finally {
       setJoining(null);
     }
-  };
-
-  const showTicketModal = (ticket: Ticket, eta: EtaResponse) => {
-    Modal.info({
-      title: '🎫 Your Queue Ticket',
-      width: 500,
-      content: (
-        <div style={{ padding: '20px 0' }}>
-          <Card>
-            <Statistic 
-              title="Your Position" 
-              value={ticket.position} 
-              prefix={<TeamOutlined />}
-              suffix="in line"
-            />
-            <br />
-            <Statistic 
-              title="🧠 Smart ETA" 
-              value={eta.estimatedWaitMinutes} 
-              prefix={<ClockCircleOutlined />}
-              suffix="minutes"
-              valueStyle={{ color: '#1890ff' }}
-            />
-            <br />
-            <Text type="secondary">
-              🎯 Ticket ID: {ticket.ticketId}
-              <br />
-              📧 Notifications enabled for {currentUserEmail}
-            </Text>
-            
-            <div style={{ marginTop: '20px' }}>
-              <Progress 
-                percent={Math.max(5, 100 - (ticket.position * 10))} 
-                status="active"
-                strokeColor={{
-                  '0%': '#108ee9',
-                  '100%': '#87d068',
-                }}
-              />
-              <Text style={{ fontSize: '12px', color: '#666' }}>
-                Queue progress estimation
-              </Text>
-            </div>
-          </Card>
-        </div>
-      ),
-    });
   };
 
   const logout = () => {
@@ -163,6 +118,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           >
             Refresh
           </Button>
+          {onSwitchToAdmin && (
+            <Button 
+              onClick={onSwitchToAdmin}
+              style={{ border: 'none', background: 'rgba(255,255,255,0.2)', color: 'white' }}
+            >
+              🎛️ Admin Panel
+            </Button>
+          )}
           <Button 
             icon={<LogoutOutlined />} 
             onClick={logout}
@@ -259,14 +222,26 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                 <List
                   dataSource={myTickets}
                   renderItem={(ticket) => (
-                    <List.Item>
+                    <List.Item
+                      actions={[
+                        <Button 
+                          type="link" 
+                          onClick={() => {
+                            setSelectedTicket(ticket);
+                            setShowTicketModal(true);
+                          }}
+                        >
+                          View Details
+                        </Button>
+                      ]}
+                    >
                       <List.Item.Meta
                         title={`Position ${ticket.position}`}
                         description={
                           <Space direction="vertical" size="small">
                             <Tag color="blue">{ticket.status}</Tag>
                             <Text type="secondary">
-                              ETA: ~{ticket.estimatedWaitMinutes} min
+                              Ticket ID: {ticket.ticketId?.substring(0, 8)}...
                             </Text>
                           </Space>
                         }
@@ -310,6 +285,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           </Col>
         </Row>
       </Content>
+
+      {/* Ticket Detail Modal */}
+      <TicketDetailModal
+        visible={showTicketModal}
+        ticket={selectedTicket}
+        onClose={() => setShowTicketModal(false)}
+      />
     </Layout>
   );
 };

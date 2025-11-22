@@ -52,6 +52,31 @@ public class QueueController {
             );
         }
     }
+
+    @GetMapping
+    public ResponseEntity<List<Map<String, Object>>> getAllQueues() {
+        log.info("Get all queues request received");
+        try {
+            List<com.smartqueue.aws.model.QueueInfo> queues = queueService.getAllQueues();
+            
+            // Convert to simple response format
+            List<Map<String, Object>> response = new ArrayList<>();
+            for (com.smartqueue.aws.model.QueueInfo queue : queues) {
+                Map<String, Object> queueMap = new java.util.HashMap<>();
+                queueMap.put("queueId", queue.getQueueId());
+                queueMap.put("queueName", queue.getQueueName());
+                queueMap.put("isActive", queue.getIsActive());
+                queueMap.put("openSlots", queue.getOpenSlots());
+                queueMap.put("maxCapacity", queue.getMaxCapacity());
+                response.add(queueMap);
+            }
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error getting all queues", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
     
     @GetMapping("/{queueId}/status")
     public ResponseEntity<QueueStatusResponse> getStatus(

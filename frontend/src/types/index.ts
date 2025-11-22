@@ -51,6 +51,7 @@ export interface QueueInfo {
   description: string;
   currentWaitingCount: number;
   averageServiceTimeMinutes: number;
+  maxCapacity?: number;
   isActive: boolean;
 }
 

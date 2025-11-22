@@ -21,9 +21,9 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess, onSwitch
       const user = await userService.register(values);
       message.success(`Welcome ${user.name}! Registration successful.`);
       
-      // Auto-login after registration
-      await userService.login({ email: values.email, password: values.password });
+      // Save user info and redirect to dashboard (no need to call login again)
       userService.setUserInfo(user.userId, user.email);
+      localStorage.setItem('currentUser', JSON.stringify(user));
       
       onRegisterSuccess(user);
     } catch (error: any) {
