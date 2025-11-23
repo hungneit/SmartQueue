@@ -92,6 +92,12 @@ resource "aws_route_table_association" "a" {
       protocol    = "tcp"
       cidr_blocks = ["0.0.0.0/0"]
     }
+      ingress {
+        from_port   = 8080
+        to_port     = 8080
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+      }
     egress {
       from_port   = 0
       to_port     = 0
@@ -177,6 +183,33 @@ resource "aws_dynamodb_table" "tickets" {
   global_secondary_index {
     name            = "queueId-index"
     hash_key        = "queueId"
+    projection_type = "ALL"
+  }
+
+  tags = {
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+resource "aws_dynamodb_table" "users" {
+  name           = "${var.project_name}-users-${var.environment}"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "userId"
+
+  attribute {
+    name = "userId"
+    type = "S"
+  }
+
+  attribute {
+    name = "email"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "email-index"
+    hash_key        = "email"
     projection_type = "ALL"
   }
 

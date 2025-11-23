@@ -3,7 +3,6 @@
 # 🧪 SmartQueue Full Integration Test (No Cloud Required)
 # Test toàn bộ luồng nghiệp vụ từ frontend đến backend
 
-set -e
 
 echo "========================================="
 echo "🧪 SMARTQUEUE INTEGRATION TEST"
@@ -17,6 +16,8 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
+
+URL="http://52.221.245.143:8080"
 
 # Test counter
 PASSED=0
@@ -53,9 +54,9 @@ test_api() {
 
 echo -e "${BLUE}📊 Step 1: Health Checks${NC}"
 echo "-------------------------------------------"
-curl -s http://localhost:8080/actuator/health | jq . > /dev/null && echo -e "${GREEN}✓${NC} AWS Service (8080)" || echo -e "${RED}✗${NC} AWS Service"
-curl -s http://localhost:8081/actuator/health | jq . > /dev/null && echo -e "${GREEN}✓${NC} Aliyun Service (8081)" || echo -e "${RED}✗${NC} Aliyun Service"
-curl -s http://localhost:3000 > /dev/null && echo -e "${GREEN}✓${NC} Frontend (3000)" || echo -e "${RED}✗${NC} Frontend"
+curl -s --max-time 5 $URL/actuator/health | jq . > /dev/null && echo -e "${GREEN}✓${NC} AWS Service (8080)" || echo -e "${RED}✗${NC} AWS Service"
+curl -s --max-time 5 $URL/actuator/health | jq . > /dev/null && echo -e "${GREEN}✓${NC} Aliyun Service (8081)" || echo -e "${RED}✗${NC} Aliyun Service"
+curl -s --max-time 5 $URL:3000 > /dev/null && echo -e "${GREEN}✓${NC} Frontend (3000)" || echo -e "${RED}✗${NC} Frontend"
 echo ""
 
 echo -e "${BLUE}📊 Step 2: User Registration & Login${NC}"
@@ -63,7 +64,7 @@ echo "-------------------------------------------"
 
 # Register user
 echo "Registering new user..."
-REGISTER_RESPONSE=$(curl -s -X POST http://localhost:8080/users/register \
+REGISTER_RESPONSE=$(curl -s -X POST $URL/users/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "testuser@smartqueue.com",
@@ -89,7 +90,7 @@ echo "-------------------------------------------"
 
 # Get all queues
 echo "Getting available queues..."
-QUEUES_RESPONSE=$(curl -s http://localhost:8080/queues)
+QUEUES_RESPONSE=$(curl -s $URL/queues)
 
 if echo "$QUEUES_RESPONSE" | grep -q "queueId"; then
     echo -e "${GREEN}✓ PASS${NC} - Get queues"
@@ -108,7 +109,7 @@ echo "-------------------------------------------"
 
 # Join queue
 echo "Joining queue: $QUEUE_ID..."
-JOIN_RESPONSE=$(curl -s -X POST "http://localhost:8080/queues/${QUEUE_ID}/join" \
+JOIN_RESPONSE=$(curl -s -X POST "$URL/queues/${QUEUE_ID}/join" \
   -H "Content-Type: application/json" \
   -d "{\"userId\": \"$USER_ID\"}")
 
@@ -133,7 +134,7 @@ echo "-------------------------------------------"
 
 # Get ETA
 echo "Calculating ETA..."
-ETA_RESPONSE=$(curl -s "http://localhost:8081/eta?queueId=${QUEUE_ID}&ticketId=${TICKET_ID}&position=${POSITION}")
+ETA_RESPONSE=$(curl -s "$URL/eta?queueId=${QUEUE_ID}&ticketId=${TICKET_ID}&position=${POSITION}")
 
 if echo "$ETA_RESPONSE" | grep -q "estimatedWaitMinutes"; then
     echo -e "${GREEN}✓ PASS${NC} - ETA calculation"
@@ -154,7 +155,7 @@ echo "-------------------------------------------"
 
 # Check status
 echo "Checking ticket status..."
-STATUS_RESPONSE=$(curl -s "http://localhost:8080/queues/${QUEUE_ID}/status?ticketId=${TICKET_ID}")
+STATUS_RESPONSE=$(curl -s "$URL/queues/${QUEUE_ID}/status?ticketId=${TICKET_ID}")
 
 if echo "$STATUS_RESPONSE" | grep -q "$TICKET_ID"; then
     echo -e "${GREEN}✓ PASS${NC} - Queue status check"
@@ -173,7 +174,7 @@ echo "-------------------------------------------"
 
 # Test frontend can reach backend through proxy
 echo "Testing frontend proxy to AWS backend..."
-PROXY_AWS=$(curl -s http://localhost:3000/api/aws/actuator/health 2>/dev/null || echo "{}")
+PROXY_AWS=$(curl -s $URL/api/aws/actuator/health 2>/dev/null || echo "{}")
 
 if echo "$PROXY_AWS" | grep -q "UP"; then
     echo -e "${GREEN}✓ PASS${NC} - Frontend → AWS proxy"
@@ -183,7 +184,7 @@ else
 fi
 
 echo "Testing frontend proxy to Aliyun backend..."
-PROXY_ALIYUN=$(curl -s http://localhost:3000/api/aliyun/actuator/health 2>/dev/null || echo "{}")
+PROXY_ALIYUN=$(curl -s $URL/api/aliyun/actuator/health 2>/dev/null || echo "{}")
 
 if echo "$PROXY_ALIYUN" | grep -q "UP"; then
     echo -e "${GREEN}✓ PASS${NC} - Frontend → Aliyun proxy"
@@ -199,7 +200,7 @@ echo "-------------------------------------------"
 # Test AWS calling Aliyun
 echo "Testing AWS → Aliyun integration..."
 # Join another queue to trigger potential ETA call
-JOIN2_RESPONSE=$(curl -s -X POST "http://localhost:8080/queues/${QUEUE_ID}/join" \
+JOIN2_RESPONSE=$(curl -s -X POST "$URL/queues/${QUEUE_ID}/join" \
   -H "Content-Type: application/json" \
   -d "{\"userId\": \"user-$(date +%s)\"}")
 
@@ -234,8 +235,8 @@ if [ $FAILED -eq 0 ]; then
     echo ""
     echo -e "${BLUE}🚀 System Ready for Development!${NC}"
     echo ""
-    echo "Frontend: http://localhost:3000"
-    echo "AWS API:  http://localhost:8080"
+    echo "Frontend: $URL"
+    echo "AWS API:  $URL"
     echo "ETA API:  http://localhost:8081"
     exit 0
 else
