@@ -17,4 +17,5 @@ phases:
 artifacts:
   files:
     - service-queue-aws/target/service-queue-aws-1.0.0.jar
+    - appspec.yml
   discard-paths: yes
