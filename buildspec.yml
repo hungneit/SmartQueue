@@ -10,10 +10,11 @@ phases:
       - yum install -y maven git
   pre_build:
     commands:
-      - echo "Checking if service-queue-aws folder changed"
-      # Get the latest commit hash from environment variable
-      - CHANGED=$(git diff --name-only $CODEBUILD_SOURCE_VERSION $CODEBUILD_SOURCE_VERSION~1 | grep '^service-queue-aws/')
-      - if [ -z "$CHANGED" ]; then echo "No changes in service-queue-aws, skipping build"; exit 0; fi
+      - echo "Fetching previous commit for diff"
+      - git fetch --depth=2 origin $CODEBUILD_RESOLVED_SOURCE_VERSION
+      - PREV_COMMIT=$(git rev-parse $CODEBUILD_RESOLVED_SOURCE_VERSION^)
+      - CHANGED=$(git diff --name-only $CODEBUILD_RESOLVED_SOURCE_VERSION $PREV_COMMIT | grep '^service-queue-aws/')
+      - echo "Changed files: $CHANGED"
   build:
     commands:
       - mvn clean package -DskipTests
