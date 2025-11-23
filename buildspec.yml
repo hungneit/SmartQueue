@@ -6,8 +6,8 @@ phases:
       java: corretto21
     commands:
       - echo "Installing Maven"
-      - apt-get update
-      - apt-get install -y maven
+      - yum update -y
+      - yum install -y maven
 
   build:
     commands:
