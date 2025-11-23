@@ -90,8 +90,8 @@ USE_IN_MEMORY=false
 
 # AWS Configuration (sẽ dùng IAM Instance Profile)
 AWS_REGION=ap-southeast-1
-DDB_TABLE_TICKETS=smartqueue-tickets
-DDB_TABLE_QUEUES=smartqueue-queues
+DDB_TABLE_TICKETS=smartq-tickets
+DDB_TABLE_QUEUES=smartq-queues
 
 # Service Integration (URL của Service Aliyun)
 SERVICE_B_BASEURL=http://YOUR_ALIYUN_ECS_IP:8081

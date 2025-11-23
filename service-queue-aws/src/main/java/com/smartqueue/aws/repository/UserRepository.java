@@ -16,7 +16,7 @@ import java.util.Optional;
 public class UserRepository {
     
     private final DynamoDbEnhancedClient dynamoDbEnhancedClient;
-    private static final String TABLE_NAME = "smartqueue-users";
+    private static final String TABLE_NAME = "smartq-users-dev";
 
     public UserRepository(DynamoDbEnhancedClient dynamoDbEnhancedClient) {
         this.dynamoDbEnhancedClient = dynamoDbEnhancedClient;

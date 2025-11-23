@@ -12,10 +12,10 @@ export const userService = {
   async login(credentials: LoginRequest): Promise<string> {
     const response = await api.post('/users/login', credentials);
     const token = response.data;
-    
+
     // Store token for future requests
     localStorage.setItem('authToken', token);
-    
+
     return token;
   },
 
