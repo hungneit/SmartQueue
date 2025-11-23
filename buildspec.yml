@@ -6,21 +6,15 @@ phases:
       java: corretto21
     commands:
       - echo "Installing Maven"
-      - yum install -y maven git
-  pre_build:
-    commands:
-      - echo "Fetching previous commit for diff"
-      - git fetch --depth=2 origin $CODEBUILD_RESOLVED_SOURCE_VERSION
-      - bash -c "PREV_COMMIT=\$(git rev-parse $CODEBUILD_RESOLVED_SOURCE_VERSION^)"
-      - bash -c "CHANGED=\$(git diff --name-only $CODEBUILD_RESOLVED_SOURCE_VERSION \$PREV_COMMIT | grep '^service-queue-aws/')"
-      - bash -c "echo \"Changed files: \$CHANGED\""
+      - apt-get update
+      - apt-get install -y maven
 
   build:
     commands:
+      - cd service-queue-aws
       - mvn clean package -DskipTests
 
 artifacts:
   files:
-    - target/service-queue-aws-1.0.0.jar
-    - appspec.yml
-    - scripts/*
+    - service-queue-aws/target/service-queue-aws-1.0.0.jar
+  discard-paths: yes
