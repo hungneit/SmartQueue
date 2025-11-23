@@ -19,8 +19,8 @@ java -version
 # Set environment variables
 echo "📌 Setting environment variables..."
 export AWS_REGION=${AWS_REGION:-ap-southeast-1}
-export DDB_TABLE_TICKETS=${DDB_TABLE_TICKETS:-smartqueue-tickets}
-export DDB_TABLE_QUEUES=${DDB_TABLE_QUEUES:-smartqueue-queues}
+export DDB_TABLE_TICKETS=${DDB_TABLE_TICKETS:-smarq-tickets}
+export DDB_TABLE_QUEUES=${DDB_TABLE_QUEUES:-smarq-queues}
 export SERVER_PORT=${SERVER_PORT:-8080}
 export SERVICE_B_BASEURL=${SERVICE_B_BASEURL:-http://localhost:8081}
 export SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}

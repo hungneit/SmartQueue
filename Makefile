@@ -28,3 +28,7 @@ destroy-aliyun:
 
 destroy-aws:
 	cd infra/aws && terraform destroy
+
+push-aws:
+	scp -i infra/aws/generated_key.pem service-queue-aws/target/service-queue-aws-1.0.0.jar ec2-user@52.221.245.143:~/
+

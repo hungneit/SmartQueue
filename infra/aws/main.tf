@@ -46,14 +46,14 @@ variable "project_name" {
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
   tags = {
-    Name = "smartqueue-vpc"
+    Name = "${var.project_name}-vpc"
   }
 }
 
 resource "aws_internet_gateway" "gw" {
   vpc_id = aws_vpc.main.id
   tags = {
-    Name = "smartqueue-igw"
+    Name = "${var.project_name}-igw"
   }
 }
 
@@ -66,7 +66,7 @@ resource "aws_route_table" "rt" {
   }
 
   tags = {
-    Name = "smartqueue-rt"
+    Name = "${var.project_name}-rt"
   }
 }
 
@@ -76,7 +76,7 @@ resource "aws_route_table_association" "a" {
 }
   # Security Group for EC2
   resource "aws_security_group" "backend_sg" {
-    name        = "smartqueue-backend-sg"
+    name        = "${var.project_name}-backend-sg"
     description = "Allow SSH and HTTP"
     vpc_id      = aws_vpc.main.id
 
@@ -99,7 +99,7 @@ resource "aws_route_table_association" "a" {
       cidr_blocks = ["0.0.0.0/0"]
     }
     tags = {
-      Name = "smartqueue-backend-sg"
+      Name = "${var.project_name}-backend-sg"
     }
   }
 
@@ -109,7 +109,7 @@ resource "aws_subnet" "main" {
   map_public_ip_on_launch = true
   availability_zone       = "${var.aws_region}a"
   tags = {
-    Name = "smartqueue-subnet"
+    Name = "${var.project_name}-subnet"
   }
 }
 
