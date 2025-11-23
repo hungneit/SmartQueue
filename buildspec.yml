@@ -11,9 +11,10 @@ phases:
     commands:
       - echo "Fetching previous commit for diff"
       - git fetch --depth=2 origin $CODEBUILD_RESOLVED_SOURCE_VERSION
-      - "PREV_COMMIT=$(git rev-parse $CODEBUILD_RESOLVED_SOURCE_VERSION^)"
-      - "CHANGED=$(git diff --name-only $CODEBUILD_RESOLVED_SOURCE_VERSION $PREV_COMMIT | grep '^service-queue-aws/')"
-      - echo "Changed files: $CHANGED"
+      - bash -c "PREV_COMMIT=\$(git rev-parse $CODEBUILD_RESOLVED_SOURCE_VERSION^)"
+      - bash -c "CHANGED=\$(git diff --name-only $CODEBUILD_RESOLVED_SOURCE_VERSION \$PREV_COMMIT | grep '^service-queue-aws/')"
+      - bash -c "echo \"Changed files: \$CHANGED\""
+
   build:
     commands:
       - mvn clean package -DskipTests
