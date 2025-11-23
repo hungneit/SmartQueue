@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Table, Statistic, Row, Col, message, Modal, Space, Tag } from 'antd';
+import { Card, Button, Table, Statistic, Row, Col, message, Modal, Space, Tag, Tabs } from 'antd';
 import { 
   UserOutlined, 
   ClockCircleOutlined, 
   CheckCircleOutlined,
   ThunderboltOutlined,
   ReloadOutlined,
-  ArrowLeftOutlined
+  ArrowLeftOutlined,
+  SettingOutlined,
+  TeamOutlined
 } from '@ant-design/icons';
 import { queueService } from '../services/queueService';
 import { useInterval } from '../hooks/useInterval';
+import QueueManagement from './QueueManagement';
 
 interface AdminPanelProps {
   onBack?: () => void;
@@ -27,7 +30,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
   const [queues, setQueues] = useState<QueueStats[]>([]);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
-  const [autoProcessEnabled, setAutoProcessEnabled] = useState(false);
 
   const loadQueues = async () => {
     try {
@@ -171,7 +173,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
         <div>
           <h1>🎛️ Admin Panel - Quản lý hàng đợi</h1>
           <p style={{ color: '#666' }}>
-            Xử lý khách hàng trong hàng đợi. Hệ thống tự động refresh mỗi 3 giây.
+            Quản lý queues và xử lý khách hàng. Hệ thống tự động refresh mỗi 3 giây.
           </p>
         </div>
         {onBack && (
@@ -208,9 +210,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
           <Card>
             <Statistic
               title="Trạng thái"
-              value={autoProcessEnabled ? "Tự động" : "Thủ công"}
+              value="Hoạt động"
               prefix={<ClockCircleOutlined />}
-              valueStyle={{ color: autoProcessEnabled ? '#52c41a' : '#faad14' }}
+              valueStyle={{ color: '#52c41a' }}
             />
           </Card>
         </Col>
@@ -232,36 +234,58 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
         </Col>
       </Row>
 
-      {/* Queue Table */}
-      <Card
-        title="📊 Danh sách hàng đợi"
-        extra={
-          <Space>
-            <Tag color="blue">Auto-refresh: 3s</Tag>
-          </Space>
-        }
-      >
-        <Table
-          columns={columns}
-          dataSource={queues}
-          rowKey="queueId"
-          pagination={false}
-          loading={loading}
-        />
-      </Card>
+      {/* Tabs for different admin functions */}
+      <Tabs 
+        defaultActiveKey="process"
+        items={[
+          {
+            key: 'process',
+            label: (
+              <span>
+                <TeamOutlined /> Process Customers
+              </span>
+            ),
+            children: (
+              <>
+                <Card
+                  title="📊 Danh sách hàng đợi"
+                  extra={<Tag color="blue">Auto-refresh: 3s</Tag>}
+                >
+                  <Table
+                    columns={columns}
+                    dataSource={queues}
+                    rowKey="queueId"
+                    pagination={false}
+                    loading={loading}
+                  />
+                </Card>
 
-      {/* Instructions */}
-      <Card title="💡 Hướng dẫn" style={{ marginTop: 16 }}>
-        <ul>
-          <li><strong>Gọi 1 khách:</strong> Xử lý 1 khách hàng tiếp theo, position của mọi người giảm 1</li>
-          <li><strong>Gọi 3 khách:</strong> Xử lý 3 khách hàng cùng lúc (phục vụ nhanh giờ cao điểm)</li>
-          <li><strong>Xử lý hết:</strong> Xóa toàn bộ hàng đợi (dùng khi kết thúc ca)</li>
-          <li><strong>Auto-refresh:</strong> Bảng tự động cập nhật mỗi 3 giây</li>
-        </ul>
-        <p style={{ marginTop: 16, color: '#666', fontStyle: 'italic' }}>
-          💡 Mẹo: Mở Dashboard ở tab khác để xem real-time position update khi bạn nhấn "Gọi khách"
-        </p>
-      </Card>
+                {/* Instructions */}
+                <Card title="💡 Hướng dẫn" style={{ marginTop: 16 }}>
+                  <ul>
+                    <li><strong>Gọi 1 khách:</strong> Xử lý 1 khách hàng tiếp theo, position của mọi người giảm 1</li>
+                    <li><strong>Gọi 3 khách:</strong> Xử lý 3 khách hàng cùng lúc (phục vụ nhanh giờ cao điểm)</li>
+                    <li><strong>Xử lý hết:</strong> Xóa toàn bộ hàng đợi (dùng khi kết thúc ca)</li>
+                    <li><strong>Auto-refresh:</strong> Bảng tự động cập nhật mỗi 3 giây</li>
+                  </ul>
+                  <p style={{ marginTop: 16, color: '#666', fontStyle: 'italic' }}>
+                    💡 Mẹo: Mở Dashboard ở tab khác để xem real-time position update khi bạn nhấn "Gọi khách"
+                  </p>
+                </Card>
+              </>
+            ),
+          },
+          {
+            key: 'management',
+            label: (
+              <span>
+                <SettingOutlined /> Queue Management
+              </span>
+            ),
+            children: <QueueManagement onRefresh={loadQueues} />,
+          },
+        ]}
+      />
     </div>
   );
 };

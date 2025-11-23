@@ -1,6 +1,8 @@
 package com.smartqueue.aws.controller;
 
 import com.smartqueue.aws.dto.request.BulkJoinRequest;
+import com.smartqueue.aws.dto.request.CreateQueueRequest;
+import com.smartqueue.aws.dto.request.UpdateQueueRequest;
 import com.smartqueue.aws.dto.request.JoinQueueRequest;
 import com.smartqueue.aws.dto.request.ProcessNextRequest;
 import com.smartqueue.aws.dto.response.JoinQueueResponse;
@@ -75,6 +77,70 @@ public class QueueController {
         } catch (Exception e) {
             log.error("Error getting all queues", e);
             return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    @PostMapping
+    public ResponseEntity<?> createQueue(@RequestBody @Valid CreateQueueRequest request) {
+        log.info("Create queue request received: {}", request.getQueueId());
+        
+        try {
+            com.smartqueue.aws.model.QueueInfo queue = queueService.createQueue(request);
+            return ResponseEntity.ok(Map.of(
+                "message", "Queue created successfully",
+                "queue", queue
+            ));
+        } catch (Exception e) {
+            log.error("Error creating queue", e);
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/{queueId}")
+    public ResponseEntity<?> getQueueDetail(@PathVariable @NotBlank String queueId) {
+        log.info("Get queue detail request for: {}", queueId);
+        
+        try {
+            com.smartqueue.aws.model.QueueInfo queue = queueService.getQueueById(queueId);
+            return ResponseEntity.ok(queue);
+        } catch (Exception e) {
+            log.error("Error getting queue detail", e);
+            return ResponseEntity.notFound().build();
+        }
+    }
+    
+    @PutMapping("/{queueId}")
+    public ResponseEntity<?> updateQueue(
+            @PathVariable @NotBlank String queueId,
+            @RequestBody @Valid UpdateQueueRequest request) {
+        
+        log.info("Update queue request received for: {}", queueId);
+        
+        try {
+            com.smartqueue.aws.model.QueueInfo queue = queueService.updateQueue(queueId, request);
+            return ResponseEntity.ok(Map.of(
+                "message", "Queue updated successfully",
+                "queue", queue
+            ));
+        } catch (Exception e) {
+            log.error("Error updating queue", e);
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @DeleteMapping("/{queueId}")
+    public ResponseEntity<?> deleteQueue(@PathVariable @NotBlank String queueId) {
+        log.info("Delete queue request received for: {}", queueId);
+        
+        try {
+            queueService.deleteQueue(queueId);
+            return ResponseEntity.ok(Map.of(
+                "message", "Queue deleted successfully",
+                "queueId", queueId
+            ));
+        } catch (Exception e) {
+            log.error("Error deleting queue", e);
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
     

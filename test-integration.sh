@@ -193,7 +193,73 @@ else
 fi
 echo ""
 
-echo -e "${BLUE}📊 Step 8: Cross-Service Communication${NC}"
+echo -e "${BLUE}📊 Step 8: Queue Management APIs${NC}"
+echo "-------------------------------------------"
+
+# Create new queue
+echo "Creating new queue..."
+CREATE_QUEUE_RESPONSE=$(curl -s -X POST http://localhost:8080/queues \
+  -H "Content-Type: application/json" \
+  -d '{
+    "queueId": "test-queue-integration",
+    "queueName": "Integration Test Queue",
+    "maxCapacity": 50,
+    "openSlots": 50,
+    "isActive": true
+  }')
+
+if echo "$CREATE_QUEUE_RESPONSE" | grep -q "test-queue-integration"; then
+    echo -e "${GREEN}✓ PASS${NC} - Create queue"
+    NEW_QUEUE_ID="test-queue-integration"
+    ((PASSED++))
+else
+    echo -e "${RED}✗ FAIL${NC} - Create queue"
+    echo "  Response: $CREATE_QUEUE_RESPONSE"
+    ((FAILED++))
+    NEW_QUEUE_ID="test-queue-integration"
+fi
+
+# Get queue detail
+echo "Getting queue detail..."
+DETAIL_RESPONSE=$(curl -s "http://localhost:8080/queues/${NEW_QUEUE_ID}")
+
+if echo "$DETAIL_RESPONSE" | grep -q "$NEW_QUEUE_ID"; then
+    echo -e "${GREEN}✓ PASS${NC} - Get queue detail"
+    ((PASSED++))
+else
+    echo -e "${YELLOW}⚠${NC}  Could not get queue detail"
+fi
+
+# Update queue
+echo "Updating queue..."
+UPDATE_RESPONSE=$(curl -s -X PUT "http://localhost:8080/queues/${NEW_QUEUE_ID}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "queueName": "Updated Integration Test Queue",
+    "maxCapacity": 100,
+    "isActive": false
+  }')
+
+if echo "$UPDATE_RESPONSE" | grep -q "Updated Integration Test Queue"; then
+    echo -e "${GREEN}✓ PASS${NC} - Update queue"
+    ((PASSED++))
+else
+    echo -e "${YELLOW}⚠${NC}  Could not update queue"
+fi
+
+# Delete queue
+echo "Deleting test queue..."
+DELETE_RESPONSE=$(curl -s -X DELETE "http://localhost:8080/queues/${NEW_QUEUE_ID}")
+
+if echo "$DELETE_RESPONSE" | grep -q "deleted successfully"; then
+    echo -e "${GREEN}✓ PASS${NC} - Delete queue"
+    ((PASSED++))
+else
+    echo -e "${YELLOW}⚠${NC}  Could not delete queue (may have waiting customers)"
+fi
+echo ""
+
+echo -e "${BLUE}📊 Step 9: Cross-Service Communication${NC}"
 echo "-------------------------------------------"
 
 # Test AWS calling Aliyun

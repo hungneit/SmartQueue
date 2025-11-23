@@ -51,8 +51,26 @@ export const queueService = {
   },
 
   // Create a new queue (admin function)
-  async createQueue(queueData: Partial<QueueInfo>): Promise<QueueInfo> {
+  async createQueue(queueData: any): Promise<any> {
     const response = await api.post('/queues', queueData);
+    return response.data;
+  },
+
+  // Update queue (admin function)
+  async updateQueue(queueId: string, queueData: any): Promise<any> {
+    const response = await api.put(`/queues/${queueId}`, queueData);
+    return response.data;
+  },
+
+  // Delete queue (admin function)
+  async deleteQueue(queueId: string): Promise<any> {
+    const response = await api.delete(`/queues/${queueId}`);
+    return response.data;
+  },
+
+  // Get queue detail
+  async getQueueDetail(queueId: string): Promise<QueueInfo> {
+    const response = await api.get(`/queues/${queueId}`);
     return response.data;
   }
 };

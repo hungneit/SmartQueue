@@ -1,5 +1,7 @@
 package com.smartqueue.aws.service;
 
+import com.smartqueue.aws.dto.request.CreateQueueRequest;
+import com.smartqueue.aws.dto.request.UpdateQueueRequest;
 import com.smartqueue.aws.dto.request.JoinQueueRequest;
 import com.smartqueue.aws.dto.request.ProcessNextRequest;
 import com.smartqueue.aws.dto.response.JoinQueueResponse;
@@ -227,5 +229,81 @@ public class QueueService {
             log.error("Error getting all queues", e);
             throw new RuntimeException("Failed to fetch queues: " + e.getMessage());
         }
+    }
+    
+    public QueueInfo createQueue(CreateQueueRequest request) {
+        log.info("Creating new queue: {}", request.getQueueId());
+        
+        // Check if queue already exists
+        Optional<QueueInfo> existing = queueRepository.findById(request.getQueueId());
+        if (existing.isPresent()) {
+            throw new RuntimeException("Queue already exists: " + request.getQueueId());
+        }
+        
+        QueueInfo queue = QueueInfo.builder()
+                .queueId(request.getQueueId())
+                .queueName(request.getQueueName())
+                .maxCapacity(request.getMaxCapacity())
+                .openSlots(request.getOpenSlots())
+                .isActive(request.getIsActive())
+                .serviceRateEma(0.5)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+        
+        return queueRepository.save(queue);
+    }
+    
+    public QueueInfo getQueueById(String queueId) {
+        Optional<QueueInfo> queue = queueRepository.findById(queueId);
+        if (queue.isEmpty()) {
+            throw new RuntimeException("Queue not found: " + queueId);
+        }
+        return queue.get();
+    }
+    
+    public QueueInfo updateQueue(String queueId, UpdateQueueRequest request) {
+        log.info("Updating queue: {}", queueId);
+        
+        Optional<QueueInfo> queueOpt = queueRepository.findById(queueId);
+        if (queueOpt.isEmpty()) {
+            throw new RuntimeException("Queue not found: " + queueId);
+        }
+        
+        QueueInfo queue = queueOpt.get();
+        
+        if (request.getQueueName() != null) {
+            queue.setQueueName(request.getQueueName());
+        }
+        if (request.getMaxCapacity() != null) {
+            queue.setMaxCapacity(request.getMaxCapacity());
+        }
+        if (request.getOpenSlots() != null) {
+            queue.setOpenSlots(request.getOpenSlots());
+        }
+        if (request.getIsActive() != null) {
+            queue.setIsActive(request.getIsActive());
+        }
+        
+        queue.setUpdatedAt(Instant.now());
+        
+        return queueRepository.save(queue);
+    }
+    
+    public void deleteQueue(String queueId) {
+        log.info("Deleting queue: {}", queueId);
+        
+        Optional<QueueInfo> queueOpt = queueRepository.findById(queueId);
+        if (queueOpt.isEmpty()) {
+            throw new RuntimeException("Queue not found: " + queueId);
+        }
+        
+        // Check if queue has waiting tickets
+        List<Ticket> waitingTickets = ticketRepository.findWaitingTicketsByQueue(queueId);
+        if (!waitingTickets.isEmpty()) {
+            throw new RuntimeException("Cannot delete queue with " + waitingTickets.size() + " waiting customers");
+        }
+        
+        queueRepository.deleteById(queueId);
     }
 }

@@ -96,6 +96,12 @@ public class InMemoryQueueRepository extends QueueRepository {
                 .collect(Collectors.toList());
     }
     
+    public void deleteById(String queueId) {
+        log.debug("🗑️  [IN-MEMORY] Deleting queue: {}", queueId);
+        queueStore.remove(queueId);
+        log.info("✅ [IN-MEMORY] Queue deleted: {}", queueId);
+    }
+    
     public void clear() {
         queueStore.clear();
         log.info("🧹 [IN-MEMORY] Queue store cleared");
