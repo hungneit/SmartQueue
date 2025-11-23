@@ -1,0 +1,10 @@
+version: 0.0
+os: linux
+files:
+  - source: target/service-queue-aws-1.0.0.jar
+    destination: /opt/smartqueue-aws/
+hooks:
+  AfterInstall:
+    - location: scripts/restart.sh
+      timeout: 300
+      runas: ec2-user
