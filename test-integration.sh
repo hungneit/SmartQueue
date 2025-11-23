@@ -63,7 +63,7 @@ echo "-------------------------------------------"
 
 # Register user
 echo "Registering new user..."
-REGISTER_RESPONSE=$(curl -s -X POST http://localhost:8080/api/v1/users/register \
+REGISTER_RESPONSE=$(curl -s -X POST http://localhost:8080/users/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "testuser@smartqueue.com",
