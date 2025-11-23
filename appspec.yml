@@ -1,7 +1,7 @@
 version: 0.0
 os: linux
 files:
-  - source: target/service-queue-aws-1.0.0.jar
+  - source: service-queue-aws-1.0.0.jar
     destination: /opt/smartqueue-aws/
 hooks:
   AfterInstall:
