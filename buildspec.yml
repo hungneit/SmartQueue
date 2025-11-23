@@ -1,10 +1,9 @@
-# buildspec.yml
 version: 0.2
 
 phases:
   install:
     runtime-versions:
-      java: corretto11
+      java: corretto21
     commands:
       - echo "Installing Maven"
       - yum install -y maven git
@@ -12,12 +11,13 @@ phases:
     commands:
       - echo "Fetching previous commit for diff"
       - git fetch --depth=2 origin $CODEBUILD_RESOLVED_SOURCE_VERSION
-      - PREV_COMMIT=$(git rev-parse $CODEBUILD_RESOLVED_SOURCE_VERSION^)
-      - CHANGED=$(git diff --name-only $CODEBUILD_RESOLVED_SOURCE_VERSION $PREV_COMMIT | grep '^service-queue-aws/')
+      - "PREV_COMMIT=$(git rev-parse $CODEBUILD_RESOLVED_SOURCE_VERSION^)"
+      - "CHANGED=$(git diff --name-only $CODEBUILD_RESOLVED_SOURCE_VERSION $PREV_COMMIT | grep '^service-queue-aws/')"
       - echo "Changed files: $CHANGED"
   build:
     commands:
       - mvn clean package -DskipTests
+
 artifacts:
   files:
     - target/service-queue-aws-1.0.0.jar
