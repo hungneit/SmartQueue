@@ -5,6 +5,6 @@ files:
     destination: /opt/smartqueue-aws/
 hooks:
   AfterInstall:
-    - location: scripts/restart.sh
+    - location: /opt/smartqueue-aws/restart.sh
       timeout: 300
       runas: ec2-user
