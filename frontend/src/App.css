@@ -1,13 +1,16 @@
 .App {
-  text-align: center;
+  width: 100%;
+  min-height: 100vh;
 }
 
 .login-container, .register-container {
   min-height: 100vh;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   background: linear-gradient(135deg, #1890ff 0%, #722ed1 100%);
+  padding: 16px;
 }
 
 .dashboard-header {
@@ -34,4 +37,19 @@
 
 .ticket-modal .ant-modal-body {
   padding: 24px;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .dashboard-header {
+    padding: 0 16px;
+  }
+  
+  .dashboard-content {
+    padding: 16px;
+  }
+  
+  .login-container, .register-container {
+    padding: 16px;
+  }
 }

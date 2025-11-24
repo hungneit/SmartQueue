@@ -9,14 +9,15 @@ export const userService = {
   },
 
   // Login user
-  async login(credentials: LoginRequest): Promise<string> {
+  async login(credentials: LoginRequest): Promise<User> {
     const response = await api.post('/users/login', credentials);
-    const token = response.data;
-
+    const user: User = response.data;
     // Store token for future requests
-    localStorage.setItem('authToken', token);
+    // localStorage.setItem('authToken', token);
+    this.setUserInfo(user.userId, user.email);
+    localStorage.setItem('currentUser', JSON.stringify(user));
 
-    return token;
+    return user;
   },
 
   // Get user profile

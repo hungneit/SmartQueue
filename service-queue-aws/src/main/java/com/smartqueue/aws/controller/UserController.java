@@ -7,6 +7,7 @@ import com.smartqueue.aws.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
@@ -31,18 +32,11 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public Mono<String> login(@Valid @RequestBody LoginRequest request) {
+    public Mono<UserResponse> login(@Valid @RequestBody LoginRequest request) {
         log.info("User login attempt for email: {}", request.getEmail());
-        return userService.authenticateUser(request.getEmail(), request.getPassword())
-                .map(authenticated -> {
-                    if (authenticated) {
-                        // In production, return JWT token
-                        return "Login successful";
-                    } else {
-                        throw new RuntimeException("Invalid credentials");
-                    }
-                });
+        return userService.authenticateUser(request.getEmail(), request.getPassword());
     }
+
 
     @GetMapping("/{userId}")
     public Mono<UserResponse> getUser(@PathVariable String userId) {

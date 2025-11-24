@@ -20,6 +20,7 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ visible, ticket, 
   const [currentTicket, setCurrentTicket] = useState<Ticket | null>(ticket);
   const [eta, setEta] = useState<EtaResponse | null>(null);
   const [refreshInterval, setRefreshInterval] = useState<number>(0);
+  const [lastNotifiedPosition, setLastNotifiedPosition] = useState<number | null>(null);
 
   useEffect(() => {
     if (visible && ticket) {
@@ -35,6 +36,38 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ visible, ticket, 
       return () => clearInterval(interval);
     }
   }, [visible, ticket]);
+
+  // Show browser notification when position changes
+  useEffect(() => {
+    if (currentTicket?.position && currentTicket.position <= 3) {
+      // Only notify once per position
+      if (lastNotifiedPosition !== currentTicket.position) {
+        showBrowserNotification(currentTicket.position);
+        setLastNotifiedPosition(currentTicket.position);
+      }
+    }
+  }, [currentTicket?.position]);
+
+  const showBrowserNotification = (position: number) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const notification = new Notification('🔔 SmartQueue - Your Turn is Coming!', {
+        body: `You are now position ${position} in the queue. Please get ready!`,
+        icon: '/logo.png', // Add your logo
+        badge: '/logo.png',
+        tag: 'smartqueue-position',
+        requireInteraction: position === 1, // Keep notification visible if position is 1
+      });
+
+      // Play sound
+      const audio = new Audio('/notification.mp3'); // Add notification sound
+      audio.play().catch(err => console.log('Audio play failed:', err));
+
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+    }
+  };
 
   const loadTicketStatus = async () => {
     if (!ticket) return;

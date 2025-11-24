@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Button, Table, Statistic, Row, Col, message, Modal, Space, Tag, Tabs } from 'antd';
 import { 
   UserOutlined, 
@@ -14,10 +15,6 @@ import { queueService } from '../services/queueService';
 import { useInterval } from '../hooks/useInterval';
 import QueueManagement from './QueueManagement';
 
-interface AdminPanelProps {
-  onBack?: () => void;
-}
-
 interface QueueStats {
   queueId: string;
   queueName: string;
@@ -26,7 +23,8 @@ interface QueueStats {
   maxCapacity: number;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
+const AdminPanel: React.FC = () => {
+  const navigate = useNavigate();
   const [queues, setQueues] = useState<QueueStats[]>([]);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
@@ -168,7 +166,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
   const activeQueues = queues.filter(q => q.isActive).length;
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ 
+      padding: 24, 
+      minHeight: '100vh',
+      background: '#f0f2f5'
+    }}>
+      <div style={{ maxWidth: 1600, margin: '0 auto' }}>
       <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <h1>🎛️ Admin Panel - Quản lý hàng đợi</h1>
@@ -176,11 +179,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             Quản lý queues và xử lý khách hàng. Hệ thống tự động refresh mỗi 3 giây.
           </p>
         </div>
-        {onBack && (
-          <Button icon={<ArrowLeftOutlined />} onClick={onBack} size="large">
-            Back to Dashboard
-          </Button>
-        )}
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/dashboard')} size="large">
+          Back to Dashboard
+        </Button>
       </div>
 
       {/* Statistics */}
@@ -286,6 +287,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
           },
         ]}
       />
+      </div>
     </div>
   );
 };

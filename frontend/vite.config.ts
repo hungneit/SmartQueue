@@ -23,4 +23,5 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
   },
+  publicDir: 'public', // Copy files from public/ to dist/
 })

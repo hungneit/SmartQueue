@@ -1,4 +1,4 @@
-import api, { etaApi } from './api';
+import api from './api';
 import { JoinQueueRequest, Ticket, QueueInfo, EtaResponse } from '../types';
 
 export const queueService = {
@@ -36,9 +36,9 @@ export const queueService = {
     return response.data;
   },
 
-  // Get ETA from Aliyun service
+  // Get ETA - AWS service calls Aliyun internally, FE just calls AWS
   async getETA(queueId: string, ticketId: string, position: number): Promise<EtaResponse> {
-    const response = await etaApi.get('/eta', {
+    const response = await api.get('/eta', {
       params: { queueId, ticketId, position }
     });
     return response.data;

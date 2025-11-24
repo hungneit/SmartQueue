@@ -1,19 +1,17 @@
 import axios from 'axios';
 
-// API Configuration - use proxy paths in development
-const API_BASE_URL = '/api/aws';
-const ETA_SERVICE_URL = '/api/aliyun';
+// API Configuration
+// Check if running in production (built app) or development (vite dev server)
+const isProduction = import.meta.env.PROD;
 
-export const api = axios.create({
+// Production: Use relative path (proxied by Nginx)
+// Development: Use Vite proxy
+const API_BASE_URL = isProduction 
+  ? '/api'  // Nginx will proxy to http://52.221.245.143:8080
+  : '/api/aws';
+
+const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-export const etaApi = axios.create({
-  baseURL: ETA_SERVICE_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

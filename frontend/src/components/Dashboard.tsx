@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Layout, Card, Button, List, Badge, Statistic, 
   Row, Col, message, Typography, Space, Tag 
@@ -15,31 +16,34 @@ import TicketDetailModal from './TicketDetailModal';
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 
-interface DashboardProps {
-  user: any;
-  onLogout: () => void;
-  onSwitchToAdmin?: () => void;
-}
-
-const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onSwitchToAdmin }) => {
+const Dashboard: React.FC = () => {
   const [queues, setQueues] = useState<QueueInfo[]>([]);
   const [myTickets, setMyTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(false);
   const [joining, setJoining] = useState<string | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [showTicketModal, setShowTicketModal] = useState(false);
+  const navigate = useNavigate();
 
-  const currentUserId = user?.userId || userService.getCurrentUserId();
+  const currentUserId = userService.getCurrentUserId();
   const currentUserEmail = localStorage.getItem('userEmail');
+
+  const logout = () => {
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userEmail');
+    message.info('👋 Logged out successfully');
+    navigate('/login');
+  };
 
   useEffect(() => {
     if (!currentUserId) {
-      onLogout();
+      logout();
       return;
     }
     loadQueues();
     loadMyTickets();
-  }, [currentUserId, onLogout]);
+  }, [currentUserId]);
 
   const loadQueues = async () => {
     setLoading(true);
@@ -82,11 +86,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onSwitchToAdmin }
     }
   };
 
-  const logout = () => {
-    userService.logout();
-    onLogout();
-  };
-
   const getQueueStatusColor = (waitingCount: number) => {
     if (waitingCount <= 5) return 'green';
     if (waitingCount <= 15) return 'orange';
@@ -100,14 +99,16 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onSwitchToAdmin }
         padding: '0 24px',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '16px'
       }}>
-        <div>
+        <div style={{ flex: '0 0 auto' }}>
           <Title level={3} style={{ color: 'white', margin: 0 }}>
             🎯 SmartQueue
           </Title>
         </div>
-        <Space>
+        <Space wrap>
           <Text style={{ color: 'white' }}>
             <UserOutlined /> {currentUserEmail}
           </Text>
@@ -118,14 +119,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onSwitchToAdmin }
           >
             Refresh
           </Button>
-          {onSwitchToAdmin && (
-            <Button 
-              onClick={onSwitchToAdmin}
-              style={{ border: 'none', background: 'rgba(255,255,255,0.2)', color: 'white' }}
-            >
-              🎛️ Admin Panel
-            </Button>
-          )}
+          <Button 
+            onClick={() => navigate('/admin')}
+            style={{ border: 'none', background: 'rgba(255,255,255,0.2)', color: 'white' }}
+          >
+            🎛️ Admin Panel
+          </Button>
           <Button 
             icon={<LogoutOutlined />} 
             onClick={logout}
@@ -136,8 +135,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onSwitchToAdmin }
         </Space>
       </Header>
       
-      <Content style={{ padding: '24px' }}>
-        <Row gutter={[24, 24]}>
+      <Content style={{ 
+        padding: '24px', 
+        minHeight: 'calc(100vh - 64px)',
+        background: '#f0f2f5'
+      }}>
+        <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+          <Row gutter={[24, 24]}>
           {/* Available Queues */}
           <Col xs={24} lg={16}>
             <Card 
@@ -284,6 +288,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onSwitchToAdmin }
             </Card>
           </Col>
         </Row>
+        </div>
       </Content>
 
       {/* Ticket Detail Modal */}

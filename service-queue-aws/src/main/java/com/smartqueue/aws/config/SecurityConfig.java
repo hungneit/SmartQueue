@@ -25,8 +25,10 @@ public class SecurityConfig {
                         .pathMatchers("/users/register", "/users/login").permitAll()
                         .pathMatchers("/users/**").permitAll() // Allow all user operations for dev
                         .pathMatchers("/queues/**").permitAll() // Queue operations
+                        .pathMatchers("/eta").permitAll() // ETA endpoint
+                        .pathMatchers("/stats/**").permitAll() // Stats endpoints
                         .pathMatchers("/actuator/**").permitAll() // Health checks and metrics
-                        .anyExchange().authenticated()
+                        .anyExchange().permitAll() // Allow all for development
                 )
                 .build();
     }
