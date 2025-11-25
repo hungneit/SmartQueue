@@ -1,26 +1,19 @@
 import api from './api';
-import { JoinQueueRequest, Ticket, QueueInfo, EtaResponse } from '../types';
+import { JoinQueueRequest, Ticket, QueueInfo } from '../types';
 
 export const queueService = {
   // Get all available queues
   async getQueues(): Promise<QueueInfo[]> {
     const response = await api.get('/queues');
-    // Backend returns array of objects with queueId, queueName, etc
-    return response.data.map((q: any) => {
-      // Backend should return waitingCount directly
-      // If not, fall back to calculation
-      const currentWaitingCount = q.waitingCount ?? 0;
-      
-      return {
-        queueId: q.queueId,
-        name: q.queueName || q.name,
-        description: q.description || 'No description',
-        isActive: q.isActive ?? true,
-        currentWaitingCount: currentWaitingCount,
-        averageServiceTimeMinutes: 5,
-        maxCapacity: q.maxCapacity || 100
-      };
-    });
+    return response.data.map((q: any) => ({
+      queueId: q.queueId,
+      name: q.queueName || q.name,
+      description: q.description || 'No description',
+      isActive: q.isActive ?? true,
+      currentWaitingCount: q.waitingCount ?? 0,
+      averageServiceTimeMinutes: 5,
+      maxCapacity: q.maxCapacity || 100
+    }));
   },
 
   // Get specific queue info
@@ -36,17 +29,9 @@ export const queueService = {
     return response.data;
   },
 
-  // Get queue status for a ticket
+  // Get queue status for a ticket (includes estimated wait time)
   async getQueueStatus(queueId: string, ticketId: string): Promise<Ticket> {
     const response = await api.get(`/queues/${queueId}/status`, { params: { ticketId } });
-    return response.data;
-  },
-
-  // Get ETA - AWS service calls Aliyun internally, FE just calls AWS
-  async getETA(queueId: string, ticketId: string, position: number): Promise<EtaResponse> {
-    const response = await api.get('/eta', {
-      params: { queueId, ticketId, position }
-    });
     return response.data;
   },
 
@@ -90,7 +75,8 @@ export const queueService = {
         status: t.status,
         position: t.position,
         userId: t.userId,
-        joinedAt: t.joinedAt
+        joinedAt: t.joinedAt,
+        estimatedWaitMinutes: t.estimatedWaitMinutes
       }));
     } catch (error) {
       console.error('Error fetching user tickets from backend:', error);

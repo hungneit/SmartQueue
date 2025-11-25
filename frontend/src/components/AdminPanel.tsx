@@ -29,6 +29,18 @@ const AdminPanel: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
 
+  // Check if user is admin
+  useEffect(() => {
+    const currentUserEmail = localStorage.getItem('userEmail') || '';
+    const allowedAdmins = ['admin@smartqueue.site', 'hungneit@gmail.com'];
+    
+    if (!allowedAdmins.includes(currentUserEmail)) {
+      message.error('🔒 Access denied. Admin only.');
+      navigate('/dashboard');
+      return;
+    }
+  }, [navigate]);
+
   const loadQueues = async () => {
     try {
       const queueList = await queueService.getQueues();

@@ -42,7 +42,14 @@ public class UserController {
                 })
                 .onErrorResume(e -> {
                     log.warn("Login failed: {}", e.getMessage());
-                    return Mono.error(e);
+                    // Return error response instead of throwing
+                    return Mono.just(
+                        ResponseEntity.status(401)
+                            .body(UserResponse.builder()
+                                .userId("")
+                                .email(request.getEmail())
+                                .build())
+                    );
                 });
     }
 

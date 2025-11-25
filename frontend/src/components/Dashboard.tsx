@@ -172,10 +172,13 @@ const Dashboard: React.FC = () => {
           </Text>
           <Button 
             icon={<ReloadOutlined />} 
-            onClick={loadQueues}
+            onClick={() => {
+              loadQueues();
+              loadMyTickets();
+            }}
             style={{ border: 'none', background: 'rgba(255,255,255,0.15)', color: 'white' }}
           >
-            Refresh
+            Refresh All
           </Button>
           <Button 
             onClick={() => navigate('/admin')}

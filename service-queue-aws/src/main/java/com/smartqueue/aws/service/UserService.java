@@ -26,11 +26,11 @@ public class UserService {
         log.info("Creating new user with email: {}", request.getEmail());
         
         return Mono.fromCallable(() -> {
-            // Check if user exists (placeholder - in production use GSI)
-            // Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
-            // if (existingUser.isPresent()) {
-            //     throw new UserAlreadyExistsException("User with email already exists");
-            // }
+            // Check if user already exists
+            Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
+            if (existingUser.isPresent()) {
+                throw new RuntimeException("Email already registered: " + request.getEmail());
+            }
 
             User user = User.builder()
                     .userId(UUID.randomUUID().toString())
@@ -125,29 +125,30 @@ public class UserService {
     }
 
     public Mono<UserResponse> authenticateUser(String email, String password) {
-        log.debug("Authenticating user with email: {}", email);
+        log.info("🔐 Authenticating user with email: {}", email);
 
         return Mono.fromCallable(() -> {
+            log.debug("Looking up user from repository...");
             User user = userRepository.findByEmail(email)
                     .orElse(null);
 
             if (user == null) {
-                log.warn("User not found with email: {}", email);
+                log.warn("❌ User not found with email: {}", email);
                 return null;
             }
 
             if (!user.isActive()) {
-                log.warn("User account is inactive: {}", email);
+                log.warn("❌ User account is inactive: {}", email);
                 return null;
             }
 
             if (!passwordEncoder.matches(password, user.getPassword())) {
-                log.warn("Invalid password for user: {}", email);
+                log.warn("❌ Invalid password for user: {}", email);
                 return null;
             }
 
-            log.info("User authenticated successfully: {}", email);
-            return UserResponse.builder()
+            log.info("✅ User authenticated successfully: {}", email);
+            UserResponse response = UserResponse.builder()
                     .userId(user.getUserId())
                     .email(user.getEmail())
                     .phone(user.getPhone())
@@ -158,12 +159,21 @@ public class UserService {
                     .lastLoginAt(user.getLastLoginAt())
                     .isActive(user.isActive())
                     .build();
+            log.debug("Built UserResponse: {}", response);
+            return response;
         })
+        .timeout(java.time.Duration.ofSeconds(10))
         .flatMap(response -> {
             if (response == null) {
+                log.error("❌ Authentication returned null response");
                 return Mono.error(new RuntimeException("Invalid credentials"));
             }
+            log.debug("✅ Returning authenticated user response");
             return Mono.just(response);
+        })
+        .onErrorResume(e -> {
+            log.error("❌ Authentication error: {}", e.getMessage(), e);
+            return Mono.error(new RuntimeException("Authentication failed: " + e.getMessage()));
         });
     }
 }

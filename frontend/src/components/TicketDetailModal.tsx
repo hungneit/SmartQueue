@@ -74,18 +74,22 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ visible, ticket, 
     
     setLoading(true);
     try {
-      // Get updated ticket status
+      // Get updated ticket status (includes estimated wait time)
       const updatedTicket = await queueService.getQueueStatus(ticket.queueId, ticket.ticketId);
       setCurrentTicket(updatedTicket);
 
-      // Get updated ETA
-      if (updatedTicket.position && updatedTicket.position > 0) {
-        const etaResponse = await queueService.getETA(
-          ticket.queueId, 
-          ticket.ticketId, 
-          updatedTicket.position
-        );
-        setEta(etaResponse);
+      // Extract ETA from response - estimatedWaitMinutes is provided by backend
+      if (updatedTicket && typeof updatedTicket.estimatedWaitMinutes === 'number') {
+        const etaData: any = {
+          queueId: ticket.queueId,
+          ticketId: ticket.ticketId,
+          estimatedWaitMinutes: updatedTicket.estimatedWaitMinutes,
+          p90WaitMinutes: Math.ceil(updatedTicket.estimatedWaitMinutes * 1.2),
+          p50WaitMinutes: updatedTicket.estimatedWaitMinutes,
+          serviceRate: 0,
+          updatedAt: new Date()
+        };
+        setEta(etaData);
       }
     } catch (error) {
       console.error('Failed to load ticket status:', error);
