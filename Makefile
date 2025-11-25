@@ -30,5 +30,6 @@ destroy-aws:
 	cd infra/aws && terraform destroy
 
 push-aws:
-	cd service-queue-aws && mvn clean package -DskipTests && scp -i ../infra/aws/generated_key.pem target/service-queue-aws-1.0.0.jar ec2-user@52.221.245.143:/opt/smartqueue-aws/
+	cd service-queue-aws && mvn clean package -DskipTests
+	scp -i infra/aws/generated_key.pem service-queue-aws/target/service-queue-aws-1.0.0.jar ec2-user@52.221.245.143:/opt/smartqueue-aws/
 
