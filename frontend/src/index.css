@@ -5,7 +5,7 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: #0f2818;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -18,9 +18,28 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: linear-gradient(135deg, #0f2818 0%, #1a3a2a 100%);
+  background-attachment: fixed;
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 39px,
+      rgba(22, 163, 74, 0.08) 39px,
+      rgba(22, 163, 74, 0.08) 40px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 39px,
+      rgba(22, 163, 74, 0.08) 39px,
+      rgba(22, 163, 74, 0.08) 40px
+    ),
+    linear-gradient(135deg, #0f2818 0%, #1a3a2a 100%);
+  background-attachment: fixed;
 }

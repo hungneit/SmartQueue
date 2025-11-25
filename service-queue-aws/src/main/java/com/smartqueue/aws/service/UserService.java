@@ -129,16 +129,24 @@ public class UserService {
 
         return Mono.fromCallable(() -> {
             User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElse(null);
+
+            if (user == null) {
+                log.warn("User not found with email: {}", email);
+                return null;
+            }
 
             if (!user.isActive()) {
-                throw new RuntimeException("User inactive");
+                log.warn("User account is inactive: {}", email);
+                return null;
             }
 
             if (!passwordEncoder.matches(password, user.getPassword())) {
-                throw new RuntimeException("Invalid credentials");
+                log.warn("Invalid password for user: {}", email);
+                return null;
             }
 
+            log.info("User authenticated successfully: {}", email);
             return UserResponse.builder()
                     .userId(user.getUserId())
                     .email(user.getEmail())
@@ -150,6 +158,12 @@ public class UserService {
                     .lastLoginAt(user.getLastLoginAt())
                     .isActive(user.isActive())
                     .build();
+        })
+        .flatMap(response -> {
+            if (response == null) {
+                return Mono.error(new RuntimeException("Invalid credentials"));
+            }
+            return Mono.just(response);
         });
     }
 }

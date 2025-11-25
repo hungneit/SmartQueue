@@ -10,14 +10,28 @@ export const userService = {
 
   // Login user
   async login(credentials: LoginRequest): Promise<User> {
-    const response = await api.post('/users/login', credentials);
-    const user: User = response.data;
-    // Store token for future requests
-    // localStorage.setItem('authToken', token);
-    this.setUserInfo(user.userId, user.email);
-    localStorage.setItem('currentUser', JSON.stringify(user));
-
-    return user;
+    try {
+      const response = await api.post('/users/login', credentials);
+      const user: User = response.data;
+      
+      console.log('✅ Login response data:', user);
+      
+      if (!user || !user.userId) {
+        throw new Error('No userId in response');
+      }
+      
+      // Store userId and email for future requests
+      localStorage.setItem('userId', user.userId);
+      localStorage.setItem('userEmail', user.email);
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      
+      console.log('✅ Stored userId:', user.userId);
+      
+      return user;
+    } catch (error) {
+      console.error('❌ Login error:', error);
+      throw error;
+    }
   },
 
   // Get user profile

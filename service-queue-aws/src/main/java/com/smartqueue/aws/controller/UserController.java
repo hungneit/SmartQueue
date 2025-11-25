@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import jakarta.validation.Valid;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/users")
@@ -32,9 +33,17 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public Mono<UserResponse> login(@Valid @RequestBody LoginRequest request) {
+    public Mono<ResponseEntity<UserResponse>> login(@Valid @RequestBody LoginRequest request) {
         log.info("User login attempt for email: {}", request.getEmail());
-        return userService.authenticateUser(request.getEmail(), request.getPassword());
+        return userService.authenticateUser(request.getEmail(), request.getPassword())
+                .map(user -> {
+                    log.info("Login successful for user: {}", user.getUserId());
+                    return ResponseEntity.ok(user);
+                })
+                .onErrorResume(e -> {
+                    log.warn("Login failed: {}", e.getMessage());
+                    return Mono.error(e);
+                });
     }
 
 

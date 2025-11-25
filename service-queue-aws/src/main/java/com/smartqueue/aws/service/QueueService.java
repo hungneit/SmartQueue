@@ -49,7 +49,7 @@ public class QueueService {
             
             User user = userOpt.get();
             
-            // Create ticket with full user information
+            // Create ticket with full user information (position will be calculated after save)
             Ticket ticket = Ticket.builder()
                     .ticketId(Ticket.generateTicketId())
                     .queueId(queueId)
@@ -58,19 +58,21 @@ public class QueueService {
                     .userEmail(user.getEmail())
                     .userPhone(user.getPhone())
                     .userName(user.getName())
-                    .position(getNextPosition(queueId))
+                    .position(0) // Will be calculated after save
                     .joinedAt(Instant.now())
                     .emailNotificationEnabled(user.isEmailNotificationEnabled())
                     .smsNotificationEnabled(user.isSmsNotificationEnabled())
                     .build();
             
-            // Save ticket
+            // Save ticket first to get it in the system
             ticket = ticketRepository.save(ticket);
             
-            // Calculate position
+            // Then calculate position based on all waiting tickets (including this one)
             int position = calculatePosition(queueId, ticket.getTicketId());
             ticket.setPosition(position);
-            ticketRepository.save(ticket);
+            
+            // Update the saved ticket with correct position (single update, not double save)
+            ticket = ticketRepository.save(ticket);
             
             log.info("User joined queue successfully. TicketId: {}, Position: {}", ticket.getTicketId(), position);
             
@@ -186,8 +188,18 @@ public class QueueService {
                 .get()
                 .uri("/eta?queueId={queueId}&ticketId={ticketId}&position={position}", queueId, ticketId, position)
                 .retrieve()
-                .bodyToMono(Integer.class)
+                .bodyToMono(Map.class)
                 .timeout(etaServiceTimeout)
+                .map(response -> {
+                    // Aliyun returns {estimatedWaitTimeMinutes: X, ...}
+                    Object waitTime = response.get("estimatedWaitTimeMinutes");
+                    if (waitTime instanceof Integer) {
+                        return (Integer) waitTime;
+                    } else if (waitTime instanceof Number) {
+                        return ((Number) waitTime).intValue();
+                    }
+                    return position * 5; // Fallback
+                })
                 .onErrorResume(e -> {
                     log.warn("Failed to get ETA from service B, using fallback calculation", e);
                     return Mono.just(position * 5); // Fallback: 5 minutes per position
@@ -225,7 +237,14 @@ public class QueueService {
     public List<QueueInfo> getAllQueues() {
         log.info("Getting all queues");
         try {
-            return queueRepository.findAll();
+            List<QueueInfo> queues = queueRepository.findAll();
+            // Calculate waiting count for each queue
+            for (QueueInfo queue : queues) {
+                int waitingCount = ticketRepository.countWaitingTickets(queue.getQueueId());
+                queue.setWaitingCount(waitingCount);
+                log.debug("Queue: {}, waitingCount: {}", queue.getQueueId(), waitingCount);
+            }
+            return queues;
         } catch (Exception e) {
             log.error("Error getting all queues", e);
             throw new RuntimeException("Failed to fetch queues: " + e.getMessage());
@@ -306,5 +325,15 @@ public class QueueService {
         }
         
         queueRepository.deleteById(queueId);
+    }
+
+    public List<Ticket> getTicketsByQueueAndUserId(String queueId, String userId) {
+        log.info("Getting tickets for userId: {} in queueId: {}", userId, queueId);
+        try {
+            return ticketRepository.findByQueueIdAndUserId(queueId, userId);
+        } catch (Exception e) {
+            log.error("Error getting tickets by queue and user", e);
+            return new ArrayList<>();
+        }
     }
 }

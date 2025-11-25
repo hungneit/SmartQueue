@@ -14,6 +14,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -130,6 +131,19 @@ public class TicketRepository {
     
     public int countWaitingTickets(String queueId) {
         return findWaitingTicketsByQueue(queueId).size();
+    }
+
+    public List<Ticket> findByQueueIdAndUserId(String queueId, String userId) {
+        log.debug("Finding tickets by queue ID: {} and user ID: {}", queueId, userId);
+        try {
+            return findByQueueIdAndStatus(queueId, Ticket.TicketStatus.WAITING)
+                    .stream()
+                    .filter(ticket -> userId.equals(ticket.getUserId()))
+                    .toList();
+        } catch (Exception e) {
+            log.error("Error finding tickets by queue ID and user ID", e);
+            return new ArrayList<>();
+        }
     }
     
     public void deleteById(String ticketId) {

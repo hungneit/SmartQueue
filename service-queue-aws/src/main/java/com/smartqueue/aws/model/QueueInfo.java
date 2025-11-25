@@ -24,6 +24,7 @@ public class QueueInfo {
     private Instant updatedAt;
     private Boolean isActive;
     private Integer maxCapacity;
+    private Integer waitingCount; // Number of waiting customers in this queue
     
     @DynamoDbPartitionKey
     public String getQueueId() {

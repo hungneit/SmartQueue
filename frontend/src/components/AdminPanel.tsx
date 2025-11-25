@@ -47,6 +47,10 @@ const AdminPanel: React.FC = () => {
 
   useEffect(() => {
     loadQueues();
+    
+    // Refresh queue data every 2 seconds to show real-time waiting counts
+    const interval = setInterval(loadQueues, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   // Auto-refresh every 3 seconds
@@ -169,17 +173,35 @@ const AdminPanel: React.FC = () => {
     <div style={{ 
       padding: 24, 
       minHeight: '100vh',
-      background: '#f0f2f5'
+      background: 'linear-gradient(135deg, #0f2818 0%, #1a3a2a 100%)',
+      backgroundAttachment: 'fixed',
+      backgroundImage: `
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 39px,
+          rgba(22, 163, 74, 0.08) 39px,
+          rgba(22, 163, 74, 0.08) 40px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 39px,
+          rgba(22, 163, 74, 0.08) 39px,
+          rgba(22, 163, 74, 0.08) 40px
+        ),
+        linear-gradient(135deg, #0f2818 0%, #1a3a2a 100%)
+      `
     }}>
       <div style={{ maxWidth: 1600, margin: '0 auto' }}>
       <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1>🎛️ Admin Panel - Quản lý hàng đợi</h1>
-          <p style={{ color: '#666' }}>
+          <h1 style={{ color: '#16a34a' }}>🎛️ Admin Panel - Quản lý hàng đợi</h1>
+          <p style={{ color: '#86efac' }}>
             Quản lý queues và xử lý khách hàng. Hệ thống tự động refresh mỗi 3 giây.
           </p>
         </div>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/dashboard')} size="large">
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/dashboard')} size="large" style={{ background: '#16a34a', color: 'white', border: 'none' }}>
           Back to Dashboard
         </Button>
       </div>

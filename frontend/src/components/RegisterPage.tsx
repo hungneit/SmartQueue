@@ -33,23 +33,42 @@ const RegisterPage: React.FC = () => {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      background: 'linear-gradient(135deg, #16a34a 0%, #0f2818 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '20px'
+      padding: '20px',
+      backgroundImage: `
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 39px,
+          rgba(255, 255, 255, 0.03) 39px,
+          rgba(255, 255, 255, 0.03) 40px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 39px,
+          rgba(255, 255, 255, 0.03) 39px,
+          rgba(255, 255, 255, 0.03) 40px
+        ),
+        linear-gradient(135deg, #16a34a 0%, #0f2818 100%)
+      `,
+      backgroundAttachment: 'fixed'
     }}>
       <Card 
         style={{ 
           width: '100%', 
           maxWidth: '500px',
           borderRadius: '16px',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
+          boxShadow: '0 20px 40px rgba(22, 163, 74, 0.2)',
+          border: '1px solid rgba(22, 163, 74, 0.3)'
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <Title level={2} style={{ color: '#667eea', margin: 0 }}>
-            🎯 SmartQueue
+          <Title level={2} style={{ color: '#16a34a', margin: 0 }}>
+            📋 SmartQueue
           </Title>
           <Text type="secondary">Create your account</Text>
         </div>
@@ -185,7 +204,7 @@ const RegisterPage: React.FC = () => {
               size="large"
               block
               style={{ 
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
                 border: 'none',
                 height: '50px',
                 fontSize: '16px',
@@ -198,7 +217,7 @@ const RegisterPage: React.FC = () => {
 
           <div style={{ textAlign: 'center' }}>
             <Text type="secondary">
-              Already have an account? <Button type="link" onClick={() => navigate('/login')}>Sign in here</Button>
+              Already have an account? <Button type="link" onClick={() => navigate('/login')} style={{ color: '#16a34a' }}>Sign in here</Button>
             </Text>
           </div>
         </Form>

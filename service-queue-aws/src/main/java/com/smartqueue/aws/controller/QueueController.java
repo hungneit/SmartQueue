@@ -72,6 +72,7 @@ public class QueueController {
                 queueMap.put("isActive", queue.getIsActive());
                 queueMap.put("openSlots", queue.getOpenSlots());
                 queueMap.put("maxCapacity", queue.getMaxCapacity());
+                queueMap.put("waitingCount", queue.getWaitingCount() != null ? queue.getWaitingCount() : 0);
                 response.add(queueMap);
             }
             
@@ -222,6 +223,41 @@ public class QueueController {
         } catch (Exception e) {
             log.error("Error in bulk join", e);
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Get user's tickets (for syncing after page reload)
+    @GetMapping("/tickets/{userId}")
+    public ResponseEntity<List<Map<String, Object>>> getUserTickets(
+            @PathVariable @NotBlank String userId) {
+        
+        log.info("Get tickets request for userId: {}", userId);
+        
+        try {
+            // Get all tickets for this user from all queues
+            List<Map<String, Object>> userTickets = new ArrayList<>();
+            
+            List<com.smartqueue.aws.model.QueueInfo> allQueues = queueService.getAllQueues();
+            for (com.smartqueue.aws.model.QueueInfo queue : allQueues) {
+                List<com.smartqueue.aws.model.Ticket> queueTickets = 
+                    queueService.getTicketsByQueueAndUserId(queue.getQueueId(), userId);
+                
+                for (com.smartqueue.aws.model.Ticket ticket : queueTickets) {
+                    Map<String, Object> ticketMap = new java.util.HashMap<>();
+                    ticketMap.put("ticketId", ticket.getTicketId());
+                    ticketMap.put("queueId", ticket.getQueueId());
+                    ticketMap.put("status", ticket.getStatus());
+                    ticketMap.put("position", ticket.getPosition());
+                    ticketMap.put("userId", ticket.getUserId());
+                    ticketMap.put("joinedAt", ticket.getJoinedAt());
+                    userTickets.add(ticketMap);
+                }
+            }
+            
+            return ResponseEntity.ok(userTickets);
+        } catch (Exception e) {
+            log.error("Error getting user tickets", e);
+            return ResponseEntity.badRequest().body(new ArrayList<>());
         }
     }
 }

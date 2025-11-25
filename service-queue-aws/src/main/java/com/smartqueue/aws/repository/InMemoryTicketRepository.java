@@ -39,9 +39,11 @@ public class InMemoryTicketRepository extends TicketRepository {
         
         ticketStore.put(ticket.getTicketId(), ticket);
         
-        // Update queue index
-        queueTicketsIndex.computeIfAbsent(ticket.getQueueId(), k -> new ArrayList<>())
-                .add(ticket.getTicketId());
+        // Update queue index (only add if not already present)
+        List<String> queueTickets = queueTicketsIndex.computeIfAbsent(ticket.getQueueId(), k -> new ArrayList<>());
+        if (!queueTickets.contains(ticket.getTicketId())) {
+            queueTickets.add(ticket.getTicketId());
+        }
         
         log.info("✅ [IN-MEMORY] Ticket saved: {} (Queue: {}, Position: {})", 
                 ticket.getTicketId(), ticket.getQueueId(), ticket.getPosition());

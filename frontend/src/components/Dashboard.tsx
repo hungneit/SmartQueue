@@ -28,6 +28,9 @@ const Dashboard: React.FC = () => {
   const currentUserId = userService.getCurrentUserId();
   const currentUserEmail = localStorage.getItem('userEmail');
 
+  console.log('🔍 Dashboard userId:', currentUserId);
+  console.log('🔍 Dashboard email:', currentUserEmail);
+
   const logout = () => {
     localStorage.removeItem('currentUser');
     localStorage.removeItem('userId');
@@ -58,28 +61,82 @@ const Dashboard: React.FC = () => {
   };
 
   const loadMyTickets = async () => {
-    // In a real app, you'd have an API to get user's tickets
-    // For now, we'll simulate this
-    const tickets: Ticket[] = [];
-    setMyTickets(tickets);
+    // Always try to load from backend first to ensure sync
+    try {
+      if (!currentUserId) {
+        console.log('No userId, skipping loadMyTickets');
+        setMyTickets([]);
+        return;
+      }
+
+      console.log('Loading tickets from backend for userId:', currentUserId);
+      const backendTickets = await queueService.getUserTickets(currentUserId);
+      
+      // Filter to only show WAITING tickets
+      const activeTickets = backendTickets.filter(t => t.status === 'WAITING');
+      setMyTickets(activeTickets);
+      
+      // Update localStorage with fresh data from backend
+      localStorage.setItem('myTickets', JSON.stringify(activeTickets));
+      console.log('Loaded and synced tickets from backend:', activeTickets);
+      
+    } catch (error) {
+      console.error('Error loading tickets from backend:', error);
+      
+      // Fallback to localStorage if backend fails
+      try {
+        const storedTickets = localStorage.getItem('myTickets');
+        if (storedTickets) {
+          const tickets = JSON.parse(storedTickets) as Ticket[];
+          const activeTickets = tickets.filter(t => t.status === 'WAITING');
+          setMyTickets(activeTickets);
+          console.log('Fallback: Loaded tickets from localStorage:', activeTickets);
+        } else {
+          setMyTickets([]);
+          console.log('No tickets in localStorage');
+        }
+      } catch (storageError) {
+        console.error('Error reading localStorage:', storageError);
+        setMyTickets([]);
+      }
+    }
+  };
+
+  // Check if user already has a ticket in a specific queue
+  const hasTicketInQueue = (queueId: string): boolean => {
+    return myTickets.some(ticket => ticket.queueId === queueId && ticket.status === 'WAITING');
   };
 
   const joinQueue = async (queueId: string) => {
-    if (!currentUserId) return;
+    if (!currentUserId) {
+      message.error('❌ User ID not found! Please login again.');
+      logout();
+      return;
+    }
+    
+    // Check if user already joined this queue
+    if (hasTicketInQueue(queueId)) {
+      message.warning('You already have an active ticket in this queue!');
+      return;
+    }
     
     setJoining(queueId);
     try {
+      console.log(`📤 Joining queue with userId: ${currentUserId}, queueId: ${queueId}`);
       const ticket = await queueService.joinQueue(queueId, currentUserId);
       
-      message.success(`Successfully joined queue! Position: ${ticket.position}`);
+      message.success(`✅ Successfully joined queue! Position: ${ticket.position}`);
       
       // Show ticket details in modal
       setSelectedTicket(ticket);
       setShowTicketModal(true);
       
-      setMyTickets(prev => [...prev, ticket]);
+      // Reload tickets from backend to ensure sync (backend will persist correctly)
+      // DO NOT save manually to localStorage - just reload from BE
+      await loadMyTickets();
       
     } catch (error: any) {
+      console.error('❌ Join queue error:', error);
       message.error(error.response?.data?.message || 'Failed to join queue');
     } finally {
       setJoining(null);
@@ -93,19 +150,20 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
+    <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
       <Header style={{ 
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
         padding: '0 24px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '16px'
+        gap: '16px',
+        boxShadow: '0 4px 15px rgba(22, 163, 74, 0.3)'
       }}>
         <div style={{ flex: '0 0 auto' }}>
           <Title level={3} style={{ color: 'white', margin: 0 }}>
-            🎯 SmartQueue
+            📋 SmartQueue
           </Title>
         </div>
         <Space wrap>
@@ -115,20 +173,20 @@ const Dashboard: React.FC = () => {
           <Button 
             icon={<ReloadOutlined />} 
             onClick={loadQueues}
-            style={{ border: 'none', background: 'rgba(255,255,255,0.2)', color: 'white' }}
+            style={{ border: 'none', background: 'rgba(255,255,255,0.15)', color: 'white' }}
           >
             Refresh
           </Button>
           <Button 
             onClick={() => navigate('/admin')}
-            style={{ border: 'none', background: 'rgba(255,255,255,0.2)', color: 'white' }}
+            style={{ border: 'none', background: 'rgba(255,255,255,0.15)', color: 'white' }}
           >
             🎛️ Admin Panel
           </Button>
           <Button 
             icon={<LogoutOutlined />} 
             onClick={logout}
-            style={{ border: 'none', background: 'rgba(255,255,255,0.2)', color: 'white' }}
+            style={{ border: 'none', background: 'rgba(255,255,255,0.15)', color: 'white' }}
           >
             Logout
           </Button>
@@ -138,7 +196,7 @@ const Dashboard: React.FC = () => {
       <Content style={{ 
         padding: '24px', 
         minHeight: 'calc(100vh - 64px)',
-        background: '#f0f2f5'
+        background: 'transparent'
       }}>
         <div style={{ maxWidth: 1400, margin: '0 auto' }}>
           <Row gutter={[24, 24]}>
@@ -164,13 +222,18 @@ const Dashboard: React.FC = () => {
                         key="join"
                         loading={joining === queue.queueId}
                         onClick={() => joinQueue(queue.queueId)}
+                        disabled={hasTicketInQueue(queue.queueId)}
                         icon={<ThunderboltOutlined />}
+                        title={hasTicketInQueue(queue.queueId) ? 'You already have an active ticket in this queue' : 'Join this queue'}
                         style={{
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          border: 'none'
+                          background: hasTicketInQueue(queue.queueId) 
+                            ? '#9ca3af' 
+                            : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                          border: 'none',
+                          color: 'white'
                         }}
                       >
-                        Join Queue
+                        {hasTicketInQueue(queue.queueId) ? '✓ Already Joined' : 'Join Queue'}
                       </Button>
                     ]}
                   >

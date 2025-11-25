@@ -6,15 +6,21 @@ export const queueService = {
   async getQueues(): Promise<QueueInfo[]> {
     const response = await api.get('/queues');
     // Backend returns array of objects with queueId, queueName, etc
-    return response.data.map((q: any) => ({
-      queueId: q.queueId,
-      name: q.queueName || q.name,
-      description: q.description || 'No description',
-      isActive: q.isActive ?? true,
-      currentWaitingCount: q.openSlots || 0,
-      averageServiceTimeMinutes: 5,
-      maxCapacity: q.maxCapacity || 100
-    }));
+    return response.data.map((q: any) => {
+      // Backend should return waitingCount directly
+      // If not, fall back to calculation
+      const currentWaitingCount = q.waitingCount ?? 0;
+      
+      return {
+        queueId: q.queueId,
+        name: q.queueName || q.name,
+        description: q.description || 'No description',
+        isActive: q.isActive ?? true,
+        currentWaitingCount: currentWaitingCount,
+        averageServiceTimeMinutes: 5,
+        maxCapacity: q.maxCapacity || 100
+      };
+    });
   },
 
   // Get specific queue info
@@ -72,5 +78,23 @@ export const queueService = {
   async getQueueDetail(queueId: string): Promise<QueueInfo> {
     const response = await api.get(`/queues/${queueId}`);
     return response.data;
+  },
+
+  // Get user's tickets from backend (for syncing after page reload)
+  async getUserTickets(userId: string): Promise<Ticket[]> {
+    try {
+      const response = await api.get(`/queues/tickets/${userId}`);
+      return response.data.map((t: any) => ({
+        ticketId: t.ticketId,
+        queueId: t.queueId,
+        status: t.status,
+        position: t.position,
+        userId: t.userId,
+        joinedAt: t.joinedAt
+      }));
+    } catch (error) {
+      console.error('Error fetching user tickets from backend:', error);
+      return [];
+    }
   }
 };
