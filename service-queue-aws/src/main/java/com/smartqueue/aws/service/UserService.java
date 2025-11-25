@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -123,13 +124,32 @@ public class UserService {
         });
     }
 
-    public Mono<Boolean> authenticateUser(String email, String password) {
+    public Mono<UserResponse> authenticateUser(String email, String password) {
         log.debug("Authenticating user with email: {}", email);
-        
+
         return Mono.fromCallable(() -> {
-            // In production, implement proper email lookup with GSI
-            // For now, this is a placeholder
-            return false;
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            if (!user.isActive()) {
+                throw new RuntimeException("User inactive");
+            }
+
+            if (!passwordEncoder.matches(password, user.getPassword())) {
+                throw new RuntimeException("Invalid credentials");
+            }
+
+            return UserResponse.builder()
+                    .userId(user.getUserId())
+                    .email(user.getEmail())
+                    .phone(user.getPhone())
+                    .name(user.getName())
+                    .emailNotificationEnabled(user.isEmailNotificationEnabled())
+                    .smsNotificationEnabled(user.isSmsNotificationEnabled())
+                    .createdAt(user.getCreatedAt())
+                    .lastLoginAt(user.getLastLoginAt())
+                    .isActive(user.isActive())
+                    .build();
         });
     }
 }

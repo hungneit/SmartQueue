@@ -1,78 +1,31 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider, message } from 'antd';
 import RegisterPage from './components/RegisterPage';
 import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
 import AdminPanel from './components/AdminPanel';
+import { userService } from './services/userService';
 import './App.css';
 
-type AppState = 'login' | 'register' | 'dashboard' | 'admin';
-
 function App() {
-  const [currentView, setCurrentView] = useState<AppState>('login');
-  const [currentUser, setCurrentUser] = useState<any>(null);
-
   useEffect(() => {
-    // Check if user is already logged in
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser);
-        setCurrentUser(user);
-        setCurrentView('dashboard');
-      } catch (error) {
-        console.error('Failed to parse saved user:', error);
-        localStorage.removeItem('currentUser');
-      }
+    // Request notification permission on app load
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
     }
   }, []);
 
-  const handleLoginSuccess = (user: any) => {
-    setCurrentUser(user);
-    setCurrentView('dashboard');
+  const isAuthenticated = () => {
+    return !!userService.getCurrentUserId();
   };
 
-  const handleRegisterSuccess = (user: any) => {
-    setCurrentUser(user);
-    setCurrentView('dashboard');
-    message.success('🎉 Account created successfully!');
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('currentUser');
-    setCurrentUser(null);
-    setCurrentView('login');
-    message.info('👋 Logged out successfully');
-  };
-
-  const renderCurrentView = () => {
-    switch (currentView) {
-      case 'register':
-        return (
-          <RegisterPage
-            onRegisterSuccess={handleRegisterSuccess}
-            onSwitchToLogin={() => setCurrentView('login')}
-          />
-        );
-      case 'admin':
-        return <AdminPanel onBack={() => setCurrentView('dashboard')} />;
-      case 'dashboard':
-        return currentUser ? (
-          <Dashboard
-            user={currentUser}
-            onLogout={handleLogout}
-            onSwitchToAdmin={() => setCurrentView('admin')}
-          />
-        ) : null;
-      case 'login':
-      default:
-        return (
-          <LoginPage
-            onLoginSuccess={handleLoginSuccess}
-            onSwitchToRegister={() => setCurrentView('register')}
-          />
-        );
+  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+    if (!isAuthenticated()) {
+      message.warning('Please login first');
+      return <Navigate to="/login" replace />;
     }
+    return <>{children}</>;
   };
 
   return (
@@ -84,9 +37,32 @@ function App() {
         },
       }}
     >
-      <div className="App">
-        {renderCurrentView()}
-      </div>
+      <Router>
+        <div className="App">
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute>
+                  <AdminPanel />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </div>
+      </Router>
     </ConfigProvider>
   );
 }

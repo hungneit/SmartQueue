@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import reactor.core.publisher.Mono;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -145,25 +147,24 @@ public class QueueController {
     }
     
     @GetMapping("/{queueId}/status")
-    public ResponseEntity<QueueStatusResponse> getStatus(
+    public Mono<ResponseEntity<QueueStatusResponse>> getStatus(
             @PathVariable @NotBlank String queueId,
             @RequestParam @NotBlank String ticketId) {
         
         log.info("Status request received for queueId: {}, ticketId: {}", queueId, ticketId);
         
-        try {
-            QueueStatusResponse response = queueService.getQueueStatus(queueId, ticketId);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Error getting queue status", e);
-            return ResponseEntity.badRequest().body(
-                QueueStatusResponse.builder()
-                    .queueId(queueId)
-                    .ticketId(ticketId)
-                    .message("Failed to get status: " + e.getMessage())
-                    .build()
-            );
-        }
+        return queueService.getQueueStatus(queueId, ticketId)
+            .map(ResponseEntity::ok)
+            .onErrorResume(e -> {
+                log.error("Error getting queue status", e);
+                return Mono.just(ResponseEntity.badRequest().body(
+                    QueueStatusResponse.builder()
+                        .queueId(queueId)
+                        .ticketId(ticketId)
+                        .message("Failed to get status: " + e.getMessage())
+                        .build()
+                ));
+            });
     }
     
     @PostMapping("/{queueId}/next")

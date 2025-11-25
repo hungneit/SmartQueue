@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Form, Input, Button, Card, message, Typography, Space } from 'antd';
 import { MailOutlined, LockOutlined } from '@ant-design/icons';
 import { userService } from '../services/userService';
@@ -6,36 +7,25 @@ import { LoginRequest } from '../types/user';
 
 const { Title, Text } = Typography;
 
-interface LoginPageProps {
-  onLoginSuccess: (user: any) => void;
-  onSwitchToRegister: () => void;
-}
-
-const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onSwitchToRegister }) => {
+const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   const [form] = Form.useForm();
 
   const onFinish = async (values: LoginRequest) => {
     setLoading(true);
     try {
-      await userService.login(values);
-      
-      // Mock user data since login just returns success message
-      const mockUser = {
-        userId: 'mock-user-id',
-        email: values.email,
-        name: 'User'
-      };
-      
-      localStorage.setItem('currentUser', JSON.stringify(mockUser));
+      const user = await userService.login(values);
+
       message.success('🎉 Login successful!');
-      onLoginSuccess(mockUser);
+      navigate('/dashboard');
     } catch (error: any) {
-      message.error(error.message || '❌ Login failed');
+      message.error(error.response?.data?.message || '❌ Login failed');
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div style={{ 
@@ -118,7 +108,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onSwitchToRegiste
           <div style={{ textAlign: 'center' }}>
             <Space>
               <Text type="secondary">Don't have an account?</Text>
-              <Button type="link" onClick={onSwitchToRegister}>
+              <Button type="link" onClick={() => navigate('/register')}>
                 Sign up now
               </Button>
             </Space>

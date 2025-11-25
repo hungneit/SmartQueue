@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Form, Input, Button, Card, Switch, message, Typography, Space } from 'antd';
 import { UserOutlined, MailOutlined, PhoneOutlined, LockOutlined } from '@ant-design/icons';
 import { userService } from '../services/userService';
@@ -6,14 +7,10 @@ import { CreateUserRequest } from '../types';
 
 const { Title, Text } = Typography;
 
-interface RegisterPageProps {
-  onRegisterSuccess: (user: any) => void;
-  onSwitchToLogin: () => void;
-}
-
-const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess, onSwitchToLogin }) => {
+const RegisterPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
+  const navigate = useNavigate();
 
   const onFinish = async (values: CreateUserRequest) => {
     setLoading(true);
@@ -21,11 +18,11 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess, onSwitch
       const user = await userService.register(values);
       message.success(`Welcome ${user.name}! Registration successful.`);
       
-      // Save user info and redirect to dashboard (no need to call login again)
+      // Save user info and redirect to dashboard
       userService.setUserInfo(user.userId, user.email);
       localStorage.setItem('currentUser', JSON.stringify(user));
       
-      onRegisterSuccess(user);
+      navigate('/dashboard');
     } catch (error: any) {
       message.error(error.response?.data?.message || 'Registration failed');
     } finally {
@@ -201,7 +198,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess, onSwitch
 
           <div style={{ textAlign: 'center' }}>
             <Text type="secondary">
-              Already have an account? <Button type="link" onClick={onSwitchToLogin}>Sign in here</Button>
+              Already have an account? <Button type="link" onClick={() => navigate('/login')}>Sign in here</Button>
             </Text>
           </div>
         </Form>

@@ -1,6 +1,5 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { ConfigProvider } from 'antd'
 import App from './App.tsx'
@@ -20,9 +19,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <ConfigProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <App />
       </ConfigProvider>
     </QueryClientProvider>
   </React.StrictMode>,

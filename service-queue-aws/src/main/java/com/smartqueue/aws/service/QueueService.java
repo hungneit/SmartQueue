@@ -87,10 +87,10 @@ public class QueueService {
         }
     }
     
-    public QueueStatusResponse getQueueStatus(String queueId, String ticketId) {
+    public Mono<QueueStatusResponse> getQueueStatus(String queueId, String ticketId) {
         log.info("Getting queue status for queueId: {}, ticketId: {}", queueId, ticketId);
         
-        try {
+        return Mono.fromCallable(() -> {
             Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
             if (ticketOpt.isEmpty()) {
                 throw new RuntimeException("Ticket not found: " + ticketId);
@@ -103,23 +103,27 @@ public class QueueService {
             
             // Calculate current position
             int currentPosition = calculatePosition(queueId, ticketId);
+            return new Object[] { ticket, currentPosition };
+        })
+        .flatMap(data -> {
+            Ticket ticket = (Ticket) ((Object[]) data)[0];
+            int currentPosition = (int) ((Object[]) data)[1];
             
-            // Get ETA from Service B
-            Integer estimatedWaitMinutes = getEstimatedWaitTime(queueId, ticketId, currentPosition);
-            
-            return QueueStatusResponse.builder()
+            // Get ETA from Service B - now reactive
+            return getEstimatedWaitTime(queueId, ticketId, currentPosition)
+                .map(estimatedWaitMinutes -> QueueStatusResponse.builder()
                     .ticketId(ticketId)
                     .queueId(queueId)
                     .position(currentPosition)
                     .estimatedWaitMinutes(estimatedWaitMinutes)
                     .status(ticket.getStatus().name())
                     .message("Queue status retrieved successfully")
-                    .build();
-                    
-        } catch (Exception e) {
+                    .build());
+        })
+        .onErrorResume(e -> {
             log.error("Error getting queue status", e);
-            throw new RuntimeException("Failed to get queue status", e);
-        }
+            return Mono.error(new RuntimeException("Failed to get queue status", e));
+        });
     }
     
     public ProcessNextResponse processNext(String queueId, ProcessNextRequest request) {
@@ -177,20 +181,17 @@ public class QueueService {
         return sortedTickets.size() + 1; // If not found, put at end
     }
     
-    private Integer getEstimatedWaitTime(String queueId, String ticketId, int position) {
-        try {
-            return etaServiceWebClient
-                    .get()
-                    .uri("/eta?queueId={queueId}&ticketId={ticketId}&position={position}", queueId, ticketId, position)
-                    .retrieve()
-                    .bodyToMono(Integer.class)
-                    .timeout(etaServiceTimeout)
-                    .onErrorReturn(position * 5) // Fallback: 5 minutes per position
-                    .block();
-        } catch (Exception e) {
-            log.warn("Failed to get ETA from service B, using fallback calculation", e);
-            return position * 5; // Fallback calculation
-        }
+    private Mono<Integer> getEstimatedWaitTime(String queueId, String ticketId, int position) {
+        return etaServiceWebClient
+                .get()
+                .uri("/eta?queueId={queueId}&ticketId={ticketId}&position={position}", queueId, ticketId, position)
+                .retrieve()
+                .bodyToMono(Integer.class)
+                .timeout(etaServiceTimeout)
+                .onErrorResume(e -> {
+                    log.warn("Failed to get ETA from service B, using fallback calculation", e);
+                    return Mono.just(position * 5); // Fallback: 5 minutes per position
+                });
     }
     
     private void notifyServiceB(String queueId, int servedCount) {
