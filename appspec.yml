@@ -1,10 +1,25 @@
 version: 0.0
-os: linux
 files:
   - source: service-queue-aws-1.0.0.jar
     destination: /opt/smartqueue-aws/
+
 hooks:
+  BeforeInstall:
+    - location: /opt/smartqueue-aws/stop.sh
+      timeout: 30
+      runas: ec2-user
+
   AfterInstall:
+    - location: /opt/smartqueue-aws/start.sh
+      timeout: 60
+      runas: ec2-user
+
+  ApplicationStart:
     - location: /opt/smartqueue-aws/restart.sh
-      timeout: 300
+      timeout: 60
+      runas: ec2-user
+
+  AfterDeploy:
+    - location: /opt/smartqueue-aws/restart.sh
+      timeout: 60
       runas: ec2-user
